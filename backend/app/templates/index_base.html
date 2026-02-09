@@ -78,20 +78,22 @@
                 </div>
             </header>
 
-            <div class="feed-header feed-header--between">
+            <div class="feed-header">
                 <div class="header-stack">
                     <h1>Сертификация</h1>
-                    <div class="tabs" role="tablist" aria-label="Разделы сертификации">
-                        <button class="tab tab--active" type="button" data-tab="my" role="tab" aria-selected="true">Мои сертификаты</button>
-                        <button class="tab" type="button" data-tab="team" role="tab" aria-selected="false">Сертификаты сотрудников</button>
+                    <div class="tabs-row">
+                        <div class="tabs" role="tablist" aria-label="Разделы сертификации">
+                            <button class="tab tab--active" type="button" data-tab="my" role="tab" aria-selected="true">Мои сертификаты</button>
+                            <button class="tab" type="button" data-tab="team" role="tab" aria-selected="false">Сертификаты сотрудников</button>
+                        </div>
+                        <button class="btn btn--primary btn--add" id="addCertBtn" type="button" aria-label="Добавить сертификат">+ Добавить сертификат</button>
                     </div>
                 </div>
-                <button class="icon-btn" id="addCertBtn" title="Добавить сертификат" aria-label="Добавить сертификат">+</button>
             </div>
 
             <!-- Мои сертификаты -->
             <div class="tab-panel tab-panel--active" id="tab-my" data-tabpanel="my">
-                <div class="cert-empty" id="certEmpty" style="display:none;">Пока нет сертификатов. Нажмите “+”, чтобы добавить.</div>
+                <div class="cert-empty" id="certEmpty" style="display:none;">Пока нет сертификатов. Нажмите “+ Добавить сертификат”, чтобы добавить.</div>
                 <div class="section">
                     <h2 class="section-title">Внутренние сертификаты</h2>
                     <div class="cert-empty" id="myInternalEmpty" style="display:none;">Нет внутренних сертификатов.</div>

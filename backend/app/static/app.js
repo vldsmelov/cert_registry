@@ -224,18 +224,32 @@
         if (opts && opts.preview) cardCls += ' cert-card--preview';
         if (c.workflow_status === 'revoked') cardCls += ' cert-card--revoked';
 
-        var card = el('div', cardCls);
+        var card = el('div', cardCls + ' cert-card--clickable');
+        card.dataset.certId = String(c.id);
         var body = el('div', 'cert-card-body');
 
-        // Превью сертификата (только для "Мои сертификаты")
+        // Для превью-карточек ("Мои сертификаты") делаем компактную двухколоночную верстку:
+        // слева картинка, справа контент и кнопки. Так влезает больше карточек на экран.
+        var contentWrap = body;
         if (opts && opts.preview) {
+          body.classList.add('cert-card-body--preview');
+          contentWrap = el('div', 'cert-card-content');
+
           var prev = el('div', 'cert-preview');
+          var previewLink = el('a', 'cert-preview-link');
+          previewLink.href = '/certificate/' + encodeURIComponent(c.id);
+          previewLink.setAttribute('title', 'Открыть карточку сертификата');
+
           var imgPrev = el('img', 'cert-preview-img');
           imgPrev.alt = 'Превью сертификата';
           imgPrev.loading = 'lazy';
           imgPrev.src = '/api/certificates/' + encodeURIComponent(c.id) + '/image';
-          prev.appendChild(imgPrev);
+
+          previewLink.appendChild(imgPrev);
+          prev.appendChild(previewLink);
+
           body.appendChild(prev);
+          body.appendChild(contentWrap);
         }
 
         var titleRow = el('div', 'cert-title-row');
@@ -244,21 +258,21 @@
         titleLink.setAttribute('title', 'Открыть карточку сертификата');
         titleRow.appendChild(titleLink);
         addBadges(titleRow, c);
-        body.appendChild(titleRow);
+        contentWrap.appendChild(titleRow);
 
         if (opts && opts.showEmployee) {
           var emp = c.snapshot_full_name || ('Сотрудник #' + c.owner_id);
           var pos = c.snapshot_position ? (' — ' + c.snapshot_position) : '';
-          body.appendChild(el('div', 'cert-meta', emp + pos));
-          if (c.snapshot_module) body.appendChild(el('div', 'cert-meta', 'Модуль: ' + c.snapshot_module));
+          contentWrap.appendChild(el('div', 'cert-meta', emp + pos));
+          if (c.snapshot_module) contentWrap.appendChild(el('div', 'cert-meta', 'Модуль: ' + c.snapshot_module));
         }
 
         if (c.cert_type === 'internal' && c.topic) {
-          body.appendChild(el('div', 'cert-meta', 'Профиль: ' + c.topic));
+          contentWrap.appendChild(el('div', 'cert-meta', 'Профиль: ' + c.topic));
         }
 
-        body.appendChild(el('div', 'cert-dates', fmtDateRange(c.issued_at, c.expires_at)));
-        body.appendChild(el('div', 'cert-status-text', buildStatusText(c)));
+        contentWrap.appendChild(el('div', 'cert-dates', fmtDateRange(c.issued_at, c.expires_at)));
+        contentWrap.appendChild(el('div', 'cert-status-text', buildStatusText(c)));
 
         // actions
         var actions = null;
@@ -273,7 +287,7 @@
           aDl.setAttribute('title', 'Скачать PDF');
           actions.appendChild(aDl);
 
-          var btnShare = el('button', 'btn btn--sm', 'Поделиться');
+          var btnShare = el('button', 'btn btn--sm btn--outline', 'Поделиться');
           btnShare.type = 'button';
           actions.appendChild(btnShare);
 
@@ -295,7 +309,7 @@
           link.rel = 'noopener';
           qrMeta.appendChild(link);
 
-          var btnCopy = el('button', 'btn btn--sm', 'Копировать ссылку');
+          var btnCopy = el('button', 'btn btn--sm btn--outline', 'Копировать ссылку');
           btnCopy.type = 'button';
           btnCopy.addEventListener('click', function () {
             try {
@@ -348,8 +362,8 @@
           actions.appendChild(btnRev);
         }
 
-        if (actions) body.appendChild(actions);
-        if (qrWrap) body.appendChild(qrWrap);
+        if (actions) contentWrap.appendChild(actions);
+        if (qrWrap) contentWrap.appendChild(qrWrap);
 
         var st = el('div', 'cert-status cert-status--' + (c.status || 'unknown'), statusIcon(c.status));
         card.appendChild(body);
@@ -412,7 +426,7 @@
       if (!all.length) {
         if (myEmpty) {
           myEmpty.style.display = 'block';
-          myEmpty.textContent = 'Пока нет сертификатов. Нажмите “+”, чтобы добавить.';
+          myEmpty.textContent = 'Пока нет сертификатов. Нажмите “+ Добавить сертификат”, чтобы добавить.';
         }
         if (myInternalEmpty) myInternalEmpty.style.display = 'none';
         if (myExternalEmpty) myExternalEmpty.style.display = 'none';
@@ -564,9 +578,6 @@
         p.classList.toggle('tab-panel--active', active);
       });
 
-      // кнопка + только на вкладке "Мои сертификаты"
-      if (addBtn) addBtn.style.display = (key === 'my') ? 'inline-flex' : 'none';
-
       try { localStorage.setItem('cert_tab', key); } catch (e) {}
     }
 
@@ -588,9 +599,24 @@
     if (teamSearch) teamSearch.addEventListener('input', function () { renderTeam(); });
     if (teamFilter) teamFilter.addEventListener('change', function () { renderTeam(); });
 
+    // Клик по карточке открывает сертификат (чтобы не целиться в заголовок)
+    document.addEventListener('click', function (e) {
+      var t = e.target;
+      if (!t) return;
+      // не перехватываем клики по интерактивным элементам
+      if (t.closest && t.closest('a,button,input,select,textarea,label')) return;
+      var card = t.closest ? t.closest('.cert-card--clickable') : null;
+      if (!card) return;
+      var cid = (card.dataset && card.dataset.certId) ? card.dataset.certId : null;
+      if (!cid) return;
+      window.location.href = '/certificate/' + encodeURIComponent(cid);
+    });
+
     // open add modal
     if (addBtn) {
       addBtn.addEventListener('click', function () {
+        // добавлять можно из любой вкладки — переключаем на "Мои"
+        setActiveTab('my');
         openModal(addModal, addErr, addForm);
         syncAddFormUI();
       });
