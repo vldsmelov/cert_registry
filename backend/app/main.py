@@ -42,9 +42,9 @@ from .db import (
 from .users import USERS, USERS_BY_ID, DisplayUser, get_user, group_users_for_login, make_display_user
 
 
-app = FastAPI(title="Реестр сертификатов (прототип)")
+app = FastAPI(title="Реестр сертификатов")
 
-# Cookie-based session (для прототипа)
+# Cookie-based session
 app.add_middleware(SessionMiddleware, secret_key="dev-secret-key-change-me")
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -457,7 +457,7 @@ def descendant_user_ids(manager_id: int) -> List[int]:
     return out
 
 # -------------------------
-# Auth (прототип)
+# Auth
 # -------------------------
 
 @app.get("/login", response_class=HTMLResponse)

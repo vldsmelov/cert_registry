@@ -33,7 +33,7 @@ def _ensure_column(conn: sqlite3.Connection, table: str, col: str, ddl: str) -> 
 
 
 def init_db() -> None:
-    """Создаёт БД и выполняет простую миграцию схемы (прототип)."""
+    """Создаёт БД и выполняет простую миграцию схемы."""
     with _connect() as conn:
         # --- certificates ---
         conn.execute(
@@ -49,7 +49,7 @@ def init_db() -> None:
             """
         )
 
-        # Новые поля (эволюция прототипа)
+        # Новые поля (эволюция схемы)
         _ensure_column(conn, "certificates", "cert_type", "TEXT NOT NULL DEFAULT 'external'")
         _ensure_column(conn, "certificates", "topic", "TEXT")
         _ensure_column(conn, "certificates", "workflow_status", "TEXT NOT NULL DEFAULT 'active'")
