@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Сертификация</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+
+<body>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="logo">
+                <span class="logo-icon">A</span>
+                <span>Компания</span>
+            </div>
+            <nav class="nav">
+                <a class="nav-item" href="/">Живая лента</a>
+                <a class="nav-item" href="#">Сотрудники</a>
+                <a class="nav-item" href="#">Корпоративная культура</a>
+                <a class="nav-item active" href="/certification">Сертификация</a>
+                <a class="nav-item" href="#">Диск</a>
+                <a class="nav-item" href="#">Задачи и проекты</a>
+                <a class="nav-item" href="#">HR</a>
+                <a class="nav-item" href="#">Face ID</a>
+                <a class="nav-item" href="#">База знаний</a>
+                <a class="nav-item" href="#">Медицинский центр</a>
+                <a class="nav-item" href="#">FAQ</a>
+                <a class="nav-item" href="#">Документы и приказы</a>
+                <a class="nav-item" href="#">Локальные нормативы</a>
+                <a class="nav-item" href="#">Карта офиса</a>
+                <a class="nav-item" href="#">Импорт и экспорт</a>
+                <a class="nav-item" href="#">Web-кафе</a>
+                <a class="nav-item" href="#">Настройки</a>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <header class="topbar">
+                <div class="top-links">
+                    <a href="#">Все новости</a>
+                    <a href="#">Компания</a>
+                    <a href="#">Строительство</a>
+                    <a href="#">Логистика</a>
+                    <a href="#">Спорт</a>
+                    <a href="#">Медицина</a>
+                    <a href="#">Наша жизнь</a>
+                    <a href="#">Заметки лидера</a>
+                    <a href="#">Еще</a>
+                </div>
+                <div class="top-actions">
+                    <span>🔍</span>
+                    <div class="logo">
+                        <span class="logo-icon">A</span>
+                        <span>Компания</span>
+                    </div>
+                    <button class="btn">Помощь</button>
+                    <div class="profile">
+                        <button class="avatar-btn" id="profileBtn" type="button" aria-haspopup="menu" aria-expanded="false">
+                            <div class="avatar">{{ user.initials }}</div>
+                        </button>
+                        <div class="profile-menu" id="profileMenu" role="menu" aria-label="Меню профиля">
+                            <div class="profile-menu-header">
+                                <div class="avatar avatar--sm">{{ user.initials }}</div>
+                                <div class="profile-menu-meta">
+                                    <div class="profile-menu-name">{{ user.full_name }}</div>
+                                    <div class="profile-menu-role">{{ user.role_label }}</div>
+                                </div>
+                            </div>
+                            <a class="profile-menu-item" href="/profile">Профиль</a>
+                            <a class="profile-menu-item" href="/logout">Выйти</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="feed-header feed-header--between">
+                <div class="header-stack">
+                    <h1>Сертификация</h1>
+                    <div class="tabs" role="tablist" aria-label="Разделы сертификации">
+                        <button class="tab tab--active" type="button" data-tab="my" role="tab" aria-selected="true">Мои сертификаты</button>
+                        <button class="tab" type="button" data-tab="team" role="tab" aria-selected="false">Сертификаты сотрудников</button>
+                    </div>
+                </div>
+                <button class="icon-btn" id="addCertBtn" title="Добавить сертификат" aria-label="Добавить сертификат">+</button>
+            </div>
+
+            <!-- Мои сертификаты -->
+            <div class="tab-panel tab-panel--active" id="tab-my" data-tabpanel="my">
+                <div class="cert-empty" id="certEmpty" style="display:none;">Пока нет сертификатов. Нажмите “+”, чтобы добавить.</div>
+                <div class="section">
+                    <h2 class="section-title">Внутренние сертификаты</h2>
+                    <div class="cert-empty" id="myInternalEmpty" style="display:none;">Нет внутренних сертификатов.</div>
+                    <section class="cert-grid cert-grid--my" id="myInternalList"></section>
+                </div>
+
+                <div class="section">
+                    <h2 class="section-title">Внешние сертификаты</h2>
+                    <div class="cert-empty" id="myExternalEmpty" style="display:none;">Нет внешних сертификатов.</div>
+                    <section class="cert-grid cert-grid--my" id="myExternalList"></section>
+                </div>
+
+                <div class="section">
+                    <div class="feed-header feed-header--between">
+                        <h2 class="section-title">Запросы на экзамен</h2>
+                    </div>
+                    <div class="cert-empty" id="reqEmpty" style="display:none;">Нет запросов на экзамен.</div>
+                    <section class="cert-grid" id="reqList"></section>
+                </div>
+            </div>
+
+            <!-- Сертификаты сотрудников -->
+            <div class="tab-panel" id="tab-team" data-tabpanel="team">
+                <div class="toolbar">
+                    <input class="search-input" id="teamSearch" type="text" placeholder="Поиск по ФИО, сертификату, профилю" />
+                    <select class="select-sm" id="teamFilter">
+                        <option value="all">Все</option>
+                        <option value="pending_exam">Ожидают экзамен</option>
+                        <option value="passed">Экзамен сдан</option>
+                        <option value="failed">Экзамен не сдан</option>
+                        <option value="revoked">Отозваны</option>
+                        <option value="valid">Действительны</option>
+                        <option value="expired">Просрочены</option>
+                    </select>
+                </div>
+
+                <div class="form-hint" id="teamScopeHint" style="display:none;"></div>
+                <div class="cert-empty" id="teamEmpty" style="display:none;"></div>
+
+                <div class="section">
+                    <h2 class="section-title">Внутренние сертификаты</h2>
+                    <div class="cert-empty" id="teamInternalEmpty" style="display:none;"></div>
+                    <section class="cert-grid" id="teamInternalList"></section>
+                </div>
+
+                <div class="section">
+                    <h2 class="section-title">Внешние сертификаты</h2>
+                    <div class="cert-empty" id="teamExternalEmpty" style="display:none;"></div>
+                    <section class="cert-grid" id="teamExternalList"></section>
+                </div>
+            </div>
+
+            <!-- Добавление сертификата -->
+            <div class="modal" id="certModal" aria-hidden="true">
+                <div class="modal-backdrop" data-close="1"></div>
+                <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="certModalTitle">
+                    <div class="modal-header">
+                        <h2 id="certModalTitle">Добавить сертификат</h2>
+                        <button class="modal-close" type="button" data-close="1">✕</button>
+                    </div>
+                    <form id="certForm" class="modal-form">
+                        <div class="radio-row">
+                            <label class="radio-pill">
+                                <input type="radio" name="cert_type" value="internal" checked />
+                                <span>Внутренний</span>
+                            </label>
+                            <label class="radio-pill">
+                                <input type="radio" name="cert_type" value="external" />
+                                <span>Внешний</span>
+                            </label>
+                        </div>
+
+                        <label class="form-field" id="topicField">
+                            <span>Профиль сдачи</span>
+                            <select name="topic">
+                                <option value="Корпоративная культура">Корпоративная культура</option>
+                                <option value="Оказание первой помощи">Оказание первой помощи</option>
+                            </select>
+                        </label>
+                        <div class="form-hint" id="examHint" style="display:none;"></div>
+
+                        <label class="form-field">
+                            <span>Название</span>
+                            <input name="name" type="text" placeholder="Например: Внутренний сертификат" required />
+                        </label>
+                        <div class="form-row">
+                            <label class="form-field">
+                                <span>Дата выдачи</span>
+                                <input name="issued_at" type="date" required />
+                            </label>
+                            <label class="form-field">
+                                <span>Действителен до</span>
+                                <input name="expires_at" type="date" required />
+                            </label>
+                        </div>
+                        <div class="modal-actions">
+                            <button class="btn btn--primary" type="submit">Готово</button>
+                            <button class="btn" type="button" data-close="1">Отмена</button>
+                        </div>
+                        <div class="form-error" id="certFormError" aria-live="polite"></div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Оценка (экзамен) -->
+            <div class="modal" id="examModal" aria-hidden="true">
+                <div class="modal-backdrop" data-close="1"></div>
+                <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="examModalTitle">
+                    <div class="modal-header">
+                        <h2 id="examModalTitle">Результат экзамена</h2>
+                        <button class="modal-close" type="button" data-close="1">✕</button>
+                    </div>
+                    <form id="examForm" class="modal-form">
+                        <input type="hidden" name="cert_id" />
+                        <div class="form-hint" id="examTargetHint"></div>
+                        <div class="form-row">
+                            <label class="form-field">
+                                <span>Оценка</span>
+                                <select name="exam_grade" required>
+                                    <option value="Золото">Золото</option>
+                                    <option value="Серебро">Серебро</option>
+                                    <option value="Бронза">Бронза</option>
+                                    <option value="Не сдан">Не сдан</option>
+                                </select>
+                            </label>
+                            <label class="form-field">
+                                <span>Дата сдачи</span>
+                                <input name="exam_date" type="date" required />
+                            </label>
+                        </div>
+                        <div class="modal-actions">
+                            <button class="btn btn--primary" type="submit">Сохранить</button>
+                            <button class="btn" type="button" data-close="1">Отмена</button>
+                        </div>
+                        <div class="form-error" id="examFormError" aria-live="polite"></div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Отзыв сертификата (HR) -->
+            <div class="modal" id="revokeModal" aria-hidden="true">
+                <div class="modal-backdrop" data-close="1"></div>
+                <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="revokeModalTitle">
+                    <div class="modal-header">
+                        <h2 id="revokeModalTitle">Отозвать сертификат</h2>
+                        <button class="modal-close" type="button" data-close="1">✕</button>
+                    </div>
+                    <form id="revokeForm" class="modal-form">
+                        <input type="hidden" name="cert_id" />
+                        <div class="form-hint" id="revokeTargetHint"></div>
+                        <label class="form-field">
+                            <span>Причина отзыва</span>
+                            <textarea name="reason" rows="4" placeholder="Например: данные не подтверждены / истёк регламент / ошибка оформления" required></textarea>
+                        </label>
+                        <div class="modal-actions">
+                            <button class="btn btn--danger" type="submit">Отозвать</button>
+                            <button class="btn" type="button" data-close="1">Отмена</button>
+                        </div>
+                        <div class="form-error" id="revokeFormError" aria-live="polite"></div>
+                    </form>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <footer class="footer">
+        <p>By Цифровизация проектных задач</p>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+
+</html>

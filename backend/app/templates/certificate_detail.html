@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Сертификат №{{ cert.id }}</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+
+<body>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="logo">
+                <span class="logo-icon">A</span>
+                <span>Компания</span>
+            </div>
+            <nav class="nav">
+                <a class="nav-item" href="/">Живая лента</a>
+                <a class="nav-item" href="#">Сотрудники</a>
+                <a class="nav-item" href="#">Корпоративная культура</a>
+                <a class="nav-item active" href="/certification">Сертификация</a>
+                <a class="nav-item" href="#">Диск</a>
+                <a class="nav-item" href="#">Задачи и проекты</a>
+                <a class="nav-item" href="#">HR</a>
+                <a class="nav-item" href="#">Face ID</a>
+                <a class="nav-item" href="#">База знаний</a>
+                <a class="nav-item" href="#">Медицинский центр</a>
+                <a class="nav-item" href="#">FAQ</a>
+                <a class="nav-item" href="#">Документы и приказы</a>
+                <a class="nav-item" href="#">Локальные нормативы</a>
+                <a class="nav-item" href="#">Карта офиса</a>
+                <a class="nav-item" href="#">Импорт и экспорт</a>
+                <a class="nav-item" href="#">Web-кафе</a>
+                <a class="nav-item" href="#">Настройки</a>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <header class="topbar">
+                <div class="top-links">
+                    <a href="#">Все новости</a>
+                    <a href="#">Компания</a>
+                    <a href="#">Строительство</a>
+                    <a href="#">Логистика</a>
+                    <a href="#">Спорт</a>
+                    <a href="#">Медицина</a>
+                    <a href="#">Наша жизнь</a>
+                    <a href="#">Заметки лидера</a>
+                    <a href="#">Еще</a>
+                </div>
+                <div class="top-actions">
+                    <span>🔍</span>
+                    <div class="logo">
+                        <span class="logo-icon">A</span>
+                        <span>Компания</span>
+                    </div>
+                    <button class="btn">Помощь</button>
+                    <div class="profile">
+                        <button class="avatar-btn" id="profileBtn" type="button" aria-haspopup="menu" aria-expanded="false">
+                            <div class="avatar">{{ user.initials }}</div>
+                        </button>
+                        <div class="profile-menu" id="profileMenu" role="menu" aria-label="Меню профиля">
+                            <div class="profile-menu-header">
+                                <div class="avatar avatar--sm">{{ user.initials }}</div>
+                                <div class="profile-menu-meta">
+                                    <div class="profile-menu-name">{{ user.full_name }}</div>
+                                    <div class="profile-menu-role">{{ user.role_label }}</div>
+                                </div>
+                            </div>
+                            <a class="profile-menu-item" href="/profile">Профиль</a>
+                            <a class="profile-menu-item" href="/logout">Выйти</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="feed-header feed-header--between">
+                <div class="header-stack">
+                    <div class="breadcrumbs">
+                        <a href="/certification">Сертификация</a>
+                        <span class="breadcrumbs-sep">/</span>
+                        <span>Сертификат №{{ cert.id }}</span>
+                    </div>
+                    <h1>{{ cert.name }}</h1>
+                    <div class="cert-meta">
+                        <span>{{ cert.snapshot_full_name }}</span>
+                        {% if cert.snapshot_position %}
+                        <span class="dot">•</span><span>{{ cert.snapshot_position }}</span>
+                        {% endif %}
+                        {% if cert.snapshot_module %}
+                        <span class="dot">•</span><span>{{ cert.snapshot_module }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <a class="btn" href="/certification">Назад</a>
+                    <a class="btn" href="/api/certificates/{{ cert.id }}/image" target="_blank" rel="noopener">Открыть изображение</a>
+                    <a class="btn btn--primary" href="/api/certificates/{{ cert.id }}/pdf">Скачать PDF</a>
+                </div>
+            </div>
+
+            <div class="detail-grid">
+                <section class="detail-card">
+                    <div class="detail-card-title">Предпросмотр</div>
+                    <div class="cert-preview">
+                        <img class="cert-preview-img" src="/api/certificates/{{ cert.id }}/image" alt="Сертификат" />
+                    </div>
+                    <div class="form-hint">Изображение генерируется на лету при запросе.</div>
+                </section>
+
+                <section class="detail-card">
+                    <div class="detail-card-title">Данные сертификата</div>
+
+                    <div class="kv">
+                        <div class="kv-row"><div class="kv-k">Тип</div><div class="kv-v">{% if cert.cert_type == 'internal' %}Внутренний{% else %}Внешний{% endif %}</div></div>
+                        {% if cert.cert_type == 'internal' %}
+                        <div class="kv-row"><div class="kv-k">Профиль</div><div class="kv-v">{{ cert.topic or '—' }}</div></div>
+                        {% endif %}
+                        <div class="kv-row"><div class="kv-k">Дата выдачи</div><div class="kv-v">{{ cert.issued_at }}</div></div>
+                        <div class="kv-row"><div class="kv-k">Действителен до</div><div class="kv-v">{{ cert.expires_at }}</div></div>
+                        <div class="kv-row"><div class="kv-k">Статус</div><div class="kv-v">{{ cert.status_label }}</div></div>
+                    </div>
+
+                    {% if cert.cert_type == 'internal' and cert.workflow_status == 'pending_exam' %}
+                    <div class="detail-callout">
+                        <div class="detail-callout-title">Экзамен</div>
+                        <div>Необходимо сдать экзамен у <b>{{ cert.required_examiner_name or '—' }}</b>.</div>
+                    </div>
+                    {% endif %}
+
+                    {% if cert.cert_type == 'internal' and cert.workflow_status == 'passed' %}
+                    <div class="detail-callout">
+                        <div class="detail-callout-title">Экзамен сдан</div>
+                        <div>Оценка: <b>{{ cert.exam_grade or '—' }}</b>{% if cert.exam_date %} ({{ cert.exam_date }}){% endif %}</div>
+                    </div>
+                    {% endif %}
+
+                    {% if cert.workflow_status == 'revoked' %}
+                    <div class="detail-callout detail-callout--danger">
+                        <div class="detail-callout-title">Сертификат отозван</div>
+                        <div>HR: <b>{{ cert.revoked_by_name or '—' }}</b></div>
+                        <div>Причина: <b>{{ cert.revoked_reason or '—' }}</b></div>
+                    </div>
+                    {% endif %}
+
+                    <div class="detail-note">
+                        <div class="detail-note-title">Заметка</div>
+                        <div>PDF и изображение — демонстрационные, генерируются при запросе.</div>
+                    </div>
+                </section>
+            </div>
+
+        </main>
+    </div>
+
+    <footer class="footer">
+        <p>By Цифровизация проектных задач</p>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+
+</html>

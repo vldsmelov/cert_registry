@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Вход — Реестр сертификатов</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+
+<body>
+    <div class="login-page">
+        <div class="login-card">
+            <div class="login-title">
+                <div class="logo login-logo">
+                    <span class="logo-icon">A</span>
+                    <span>Компания</span>
+                </div>
+                <h1>Выберите пользователя</h1>
+                <p class="login-subtitle">Прототип: вход без пароля (смена пользователя через «Выйти» в правом верхнем углу).</p>
+            </div>
+
+            <div class="login-groups">
+                {% for group_name, users in groups %}
+                <div class="login-group">
+                    <h2>{{ group_name }}</h2>
+                    <div class="login-users">
+                        {% for u in users %}
+                        <form method="post" action="/login" class="login-user">
+                            <input type="hidden" name="user_id" value="{{ u.id }}" />
+                            <button class="login-user-btn" type="submit">
+                                <span class="avatar">{{ u.initials }}</span>
+                                <span class="login-user-meta">
+                                    <span class="login-user-name">{{ u.full_name }}</span>
+                                    <span class="login-user-role">{{ u.role_label }}</span>
+                                </span>
+                            </button>
+                        </form>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>By Цифровизация проектных задач</p>
+        </footer>
+    </div>
+</body>
+
+</html>

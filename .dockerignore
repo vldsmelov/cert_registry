@@ -1,0 +1,58 @@
+# ---- VCS ----
+.git
+.gitignore
+
+# ---- Editor / OS ----
+.DS_Store
+Thumbs.db
+.idea
+.vscode
+
+# ---- Python caches ----
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.egg-info
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.tox
+htmlcov
+.coverage
+
+# ---- Virtual env ----
+.venv
+venv
+ENV
+env
+
+# ---- Local env files / secrets ----
+.env
+.env.*
+*.local
+
+# ---- Logs ----
+*.log
+
+# ---- DB / runtime artifacts ----
+*.sqlite
+*.sqlite3
+*.db
+
+# ---- Heavy / generated artifacts ----
+dist
+build
+generated
+tmp
+uploads
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.svg
+
+# ---- Node (если вдруг появится) ----
+node_modules
+npm-debug.log
+yarn-error.log

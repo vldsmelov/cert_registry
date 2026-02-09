@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Профиль</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+
+<body>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="logo">
+                <span class="logo-icon">A</span>
+                <span>Компания</span>
+            </div>
+            <nav class="nav">
+                <a class="nav-item" href="/">Живая лента</a>
+                <a class="nav-item" href="#">Сотрудники</a>
+                <a class="nav-item" href="#">Корпоративная культура</a>
+                <a class="nav-item" href="/certification">Сертификация</a>
+                <a class="nav-item" href="#">Диск</a>
+                <a class="nav-item" href="#">Задачи и проекты</a>
+                <a class="nav-item" href="#">HR</a>
+                <a class="nav-item" href="#">Face ID</a>
+                <a class="nav-item" href="#">База знаний</a>
+                <a class="nav-item" href="#">Медицинский центр</a>
+                <a class="nav-item" href="#">FAQ</a>
+                <a class="nav-item" href="#">Документы и приказы</a>
+                <a class="nav-item" href="#">Локальные нормативы</a>
+                <a class="nav-item" href="#">Карта офиса</a>
+                <a class="nav-item" href="#">Импорт и экспорт</a>
+                <a class="nav-item" href="#">Web-кафе</a>
+                <a class="nav-item" href="#">Настройки</a>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <header class="topbar">
+                <div class="top-links">
+                    <a href="#">Все новости</a>
+                    <a href="#">Компания</a>
+                    <a href="#">Строительство</a>
+                    <a href="#">Логистика</a>
+                    <a href="#">Спорт</a>
+                    <a href="#">Медицина</a>
+                    <a href="#">Наша жизнь</a>
+                    <a href="#">Заметки лидера</a>
+                    <a href="#">Еще</a>
+                </div>
+                <div class="top-actions">
+                    <span>🔍</span>
+                    <div class="logo">
+                        <span class="logo-icon">A</span>
+                        <span>Компания</span>
+                    </div>
+                    <button class="btn">Помощь</button>
+
+                    <div class="profile">
+                        <button class="avatar-btn" id="profileBtn" type="button" aria-haspopup="menu" aria-expanded="false">
+                            <div class="avatar">{{ user.initials }}</div>
+                        </button>
+                        <div class="profile-menu" id="profileMenu" role="menu" aria-label="Меню профиля">
+                            <div class="profile-menu-header">
+                                <div class="avatar avatar--sm">{{ user.initials }}</div>
+                                <div class="profile-menu-meta">
+                                    <div class="profile-menu-name">{{ user.full_name }}</div>
+                                    <div class="profile-menu-role">{{ user.role_label }}</div>
+                                </div>
+                            </div>
+                            <a class="profile-menu-item" href="/certification">Сертификация</a>
+                            <a class="profile-menu-item" href="/logout">Выйти</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="feed-header feed-header--between">
+                <h1>Профиль</h1>
+                <a class="btn-link" href="/certification">← Назад к сертификации</a>
+            </div>
+
+            {% if request.query_params.get('saved') %}
+            <div class="notice">Сохранено ✅</div>
+            {% endif %}
+
+            <section class="profile-card">
+                <form method="post" action="/profile" class="profile-form">
+                    <label class="form-field">
+                        <span>ФИО</span>
+                        <input name="full_name" type="text" value="{{ profile.full_name }}" required />
+                    </label>
+
+                    <label class="form-field">
+                        <span>Должность</span>
+                        <input name="position" type="text" value="{{ profile.position }}" required />
+                    </label>
+
+                    <label class="form-field">
+                        <span>Модуль</span>
+                        <select name="module" required>
+                            {% for m in modules %}
+                            <option value="{{ m }}" {% if profile.module == m %}selected{% endif %}>{{ m }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+
+                    <label class="form-field">
+                        <span>Непосредственный руководитель</span>
+                        <select name="manager_id">
+                            <option value="">—</option>
+                            {% for u in users %}
+                            {% if u.id != user.id %}
+                            <option value="{{ u.id }}" {% if profile.manager_id == u.id %}selected{% endif %}>{{ u.full_name }} — {{ u.role_label }}</option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                    </label>
+
+                    {% if user.role == 'hr' %}
+                    <label class="form-field">
+                        <span>Подконтрольный модуль</span>
+                        <select name="controlled_module">
+                            <option value="">—</option>
+                            {% for m in modules %}
+                            <option value="{{ m }}" {% if profile.controlled_module == m %}selected{% endif %}>{{ m }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    {% else %}
+                    <input type="hidden" name="controlled_module" value="" />
+                    {% endif %}
+
+                    <div class="modal-actions">
+                        <button class="btn btn--primary" type="submit">Сохранить</button>
+                        <a class="btn btn--ghost" href="/certification">Отмена</a>
+                    </div>
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <p>By Цифровизация проектных задач</p>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+
+</html>

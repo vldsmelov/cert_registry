@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Лента новостей</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+
+<body>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="logo">
+                <span class="logo-icon">A</span>
+                <span>Компания</span>
+            </div>
+            <nav class="nav">
+                <a class="nav-item active" href="/">Живая лента</a>
+                <a class="nav-item" href="#">Сотрудники</a>
+                <a class="nav-item" href="#">Корпоративная культура</a>
+                <a class="nav-item" href="/certification">Сертификация</a>
+                <a class="nav-item" href="#">Диск</a>
+                <a class="nav-item" href="#">Задачи и проекты</a>
+                <a class="nav-item" href="#">HR</a>
+                <a class="nav-item" href="#">Face ID</a>
+                <a class="nav-item" href="#">База знаний</a>
+                <a class="nav-item" href="#">Медицинский центр</a>
+                <a class="nav-item" href="#">FAQ</a>
+                <a class="nav-item" href="#">Документы и приказы</a>
+                <a class="nav-item" href="#">Локальные нормативы</a>
+                <a class="nav-item" href="#">Карта офиса</a>
+                <a class="nav-item" href="#">Импорт и экспорт</a>
+                <a class="nav-item" href="#">Web-кафе</a>
+                <a class="nav-item" href="#">Настройки</a>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <header class="topbar">
+                <div class="top-links">
+                    <a href="#">Все новости</a>
+                    <a href="#">Компания</a>
+                    <a href="#">Строительство</a>
+                    <a href="#">Логистика</a>
+                    <a href="#">Спорт</a>
+                    <a href="#">Медицина</a>
+                    <a href="#">Наша жизнь</a>
+                    <a href="#">Заметки лидера</a>
+                    <a href="#">Еще</a>
+                </div>
+                <div class="top-actions">
+                    <span>🔍</span>
+                    <div class="logo">
+                        <span class="logo-icon">A</span>
+                        <span>Компания</span>
+                    </div>
+                    <button class="btn">Помощь</button>
+                    <div class="profile">
+    <button class="avatar-btn" id="profileBtn" type="button" aria-haspopup="menu" aria-expanded="false">
+        <div class="avatar">{{ user.initials }}</div>
+    </button>
+    <div class="profile-menu" id="profileMenu" role="menu" aria-label="Меню профиля">
+        <div class="profile-menu-header">
+            <div class="avatar avatar--sm">{{ user.initials }}</div>
+            <div class="profile-menu-meta">
+                <div class="profile-menu-name">{{ user.full_name }}</div>
+                <div class="profile-menu-role">{{ user.role_label }}</div>
+            </div>
+        </div>
+        <a class="profile-menu-item" href="/profile">Профиль</a>
+        <a class="profile-menu-item" href="/logout">Выйти</a>
+    </div>
+</div>
+                </div>
+            </header>
+            <div class="feed-header">
+                <h1>Лента</h1>
+                <label class="search">
+                    <input type="text" placeholder="Фильтр + поиск" />
+                    <span>⌕</span>
+                </label>
+            </div>
+            <section class="feed">
+
+
+                <div class="feed-left">
+
+                    <div class="mini-list">
+                        <article class="mini-card">
+                            <p class="date">29.01.2026</p>
+                            <h3>Цифровая гигиена — залог сохранности информации</h3>
+                            <span class="tag">Заметки лидера</span>
+                        </article>
+                        <article class="mini-card">
+                            <p class="date">26.01.2026</p>
+                            <h3>Не оформил европротокол? Тебе с компанией не по пути</h3>
+                            <span class="tag">Компания</span>
+                        </article>
+                        <article class="mini-card">
+                            <p class="date">25.01.2026</p>
+                            <h3>Снежная битва, награждение и дискотека</h3>
+                            <span class="tag">Компания Политех</span>
+                        </article>
+                        <article class="mini-card">
+                            <p class="date">23.01.2026</p>
+                            <h3>Открыта школа самоуправления для лидеров</h3>
+                            <span class="tag">Международная школа</span>
+                        </article>
+                        <article class="mini-card">
+                            <p class="date">22.01.2026</p>
+                            <h3>Единственный трекер: как жить без CRM</h3>
+                            <span class="tag">Компания</span>
+                        </article>
+                    </div>
+                </div>
+
+                <div class="feed-center">
+                    <article class="news-card">
+                        <div class="news-media">
+                        </div>
+                        <div class="news-body">
+                            <h2>Цифровая гигиена — залог сохранности информации</h2>
+                            <p>
+                                В свежей серии «Заметок лидера» напоминаем о важных правилах в компании.
+                                Соблюдайте безопасность данных, используйте двухфакторную защиту и обновляйте
+                                пароли.
+                            </p>
+                            <div class="meta">
+                                <span>1 883</span>
+                                <span>149 нравится</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="news-card">
+                        <div class="news-media second"></div>
+                        <div class="news-body">
+                            <h2>Не оформил европротокол? Тебе с компанией не по пути</h2>
+                            <p>
+                                Эпизод из жизни сотрудника приводит к важным выводам. Проверь актуальные
+                                инструкции и обсуди их с командой.
+                            </p>
+                            <div class="meta">
+                                <span>3 505</span>
+                                <span>94 нравится</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="news-card">
+                        <div class="news-media third"></div>
+                        <div class="news-body">
+                            <h2>Снежная битва, награждение и дискотека</h2>
+                            <p>
+                                Праздник собрал сотни студентов: от спортивных активностей до вечернего
+                                шоукейс-ивента.
+                            </p>
+                            <div class="meta">
+                                <span>1 378</span>
+                                <span>39 нравится</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="news-detail">
+                        <div class="detail-header">
+                            <div class="detail-avatar">👤</div>
+                            <div>
+                                <h4>Наша жизнь</h4>
+                                <p>Сегодня, 13:55 · Всем содрудникам</p>
+                            </div>
+                            <button class="more">⋯</button>
+                        </div>
+                        <h3>Цифровая гигиена — залог сохранности информации</h3>
+                        <p>
+                            В серии «Заметок лидера» напоминаем, что при прекращении трудовых
+                            взаимоотношений сотрудникам необходимо выйти из рабочих чатов, а
+                            руководителю — убедиться, что подчинённый вышел из групп и каналов.
+                        </p>
+                        <p>
+                            Данные действия носят обязательный характер и помогают дополнительно
+                            обеспечивать безопасность служебных переписок и избегать утечек
+                            информации.
+                        </p>
+                    </article>
+                </div>
+
+                <aside class="feed-right">
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h4>Дни рождения</h4>
+                        </div>
+                        <ul class="people">
+                            <li>
+                                <span class="avatar">ЯС</span>
+                                <div>
+                                    <h4>Яшков Никита Сергеевич</h4>
+                                    <small>сегодня!</small>
+                                </div>
+                            </li>
+                            <li>
+                                <span class="avatar">ГП</span>
+                                <div>
+                                    <h4>Галиева Рита Марселенна</h4>
+                                    <small>сегодня!</small>
+                                </div>
+                            </li>
+                            <li>
+                                <span class="avatar">ДК</span>
+                                <div>
+                                    <h4>Деменев Григорий Константинович</h4>
+                                    <small>сегодня!</small>
+                                </div>
+                            </li>
+                            <li>
+                                <span class="avatar">ЯА</span>
+                                <div>
+                                    <h4>Ящуков Александр Анатольевич</h4>
+                                    <small>сегодня!</small>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </aside>
+            </section>
+        </main>
+
+
+    </div>
+    <footer class="footer">
+        <p>By Цифровизация проектных задач</p>
+    </footer>
+    <script src="/static/app.js"></script>
+</body>
+
+</html>

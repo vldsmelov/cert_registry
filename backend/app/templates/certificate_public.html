@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Проверка сертификата №{{ cert_id }}</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+
+<body>
+  <div class="public-wrap">
+    <div class="public-card">
+      <div class="public-title">Проверка сертификата</div>
+      <div class="public-sub">№ {{ cert_id }}</div>
+
+      <div class="public-status public-status--{{ status_code }}">{{ status_label }}</div>
+
+      <div class="public-hint">
+        Это публичная ссылка. Здесь показывается только статус сертификата.
+      </div>
+
+      <div class="public-actions">
+        <a class="btn btn--primary" href="/login">Войти в систему</a>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>
