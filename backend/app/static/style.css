@@ -109,6 +109,11 @@ body {
     cursor: pointer;
 }
 
+.btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
 .profile {
     display: flex;
     align-items: center;
@@ -1739,6 +1744,43 @@ body {
 
 .cell-muted {
     color: rgba(0, 0, 0, 0.35);
+}
+
+/* метки в колонке 'Даты' */
+.badge--meta {
+    background: rgba(0, 0, 0, 0.03);
+    color: rgba(0, 0, 0, 0.62);
+    border-color: rgba(0, 0, 0, 0.08);
+    font-weight: 800;
+}
+
+.badge--meta-perpetual {
+    background: rgba(107, 114, 128, 0.16);
+    color: #374151;
+    border-color: rgba(107, 114, 128, 0.22);
+}
+
+.badge--meta-soon {
+    background: rgba(245, 158, 11, 0.16);
+    color: #b45309;
+    border-color: rgba(245, 158, 11, 0.25);
+}
+
+/* подсветка строк с истекающими/просроченными сертификатами */
+.cert-table tbody tr.row--expiring {
+    background: rgba(245, 158, 11, 0.06);
+}
+
+.cert-table tbody tr.row--expiring:hover {
+    background: rgba(245, 158, 11, 0.10);
+}
+
+.cert-table tbody tr.row--expired {
+    background: rgba(217, 48, 37, 0.05);
+}
+
+.cert-table tbody tr.row--expired:hover {
+    background: rgba(217, 48, 37, 0.09);
 }
 
 /* бейджи статусов в таблице */

@@ -85,7 +85,9 @@
     var teamFilter = document.getElementById('teamFilter');
     var teamModuleFilter = document.getElementById('teamModuleFilter');
     var teamGradeFilter = document.getElementById('teamGradeFilter');
+    var teamExpiryFilter = document.getElementById('teamExpiryFilter');
     var teamScopeHint = document.getElementById('teamScopeHint');
+    var exportTeamCsvBtn = document.getElementById('exportTeamCsvBtn');
 
     // сортировка таблицы сертификатов сотрудников
     var teamSortKey = 'id';
@@ -121,6 +123,8 @@
     var teamAll = [];
     var teamCanRevoke = false;
     var teamScopeText = '';
+
+    setExportEnabled(false);
 
     function todayISO() {
       var t = new Date();
@@ -538,6 +542,7 @@
       var f = (teamFilter && teamFilter.value) || 'all';
       var m = (teamModuleFilter && teamModuleFilter.value) || 'all';
       var g = (teamGradeFilter && teamGradeFilter.value) || 'all';
+      var e = (teamExpiryFilter && teamExpiryFilter.value) || 'all';
 
       return (items || []).filter(function (c) {
         // status filter
@@ -560,6 +565,24 @@
           if (cg !== g) return false;
         }
 
+
+        // expiry filter
+        if (e === 'perpetual') {
+          var ex = String(c.expires_at || '').trim();
+          if (ex) return false;
+        } else if (e === 'with_expiry') {
+          var ex2 = String(c.expires_at || '').trim();
+          if (!ex2) return false;
+        } else if (e === 'expiring_soon') {
+          var ex3 = String(c.expires_at || '').trim();
+          if (!ex3) return false;
+          var ts = parseExpiry(ex3);
+          var now = Date.now();
+          var horizon = now + 30 * 24 * 60 * 60 * 1000;
+          if (ts < now || ts > horizon) return false;
+          if (c.status === 'expired') return false;
+        }
+
         if (!q) return true;
         var hay = safeLower(c.name) + ' ' + safeLower(c.topic) + ' ' + safeLower(c.snapshot_full_name) + ' ' + safeLower(c.snapshot_position) + ' ' + safeLower(c.snapshot_manager_name) + ' ' + safeLower(c.snapshot_module);
         return hay.indexOf(q) !== -1;
@@ -570,6 +593,77 @@
       if (!d) return 0;
       var t = Date.parse(String(d));
       return isNaN(t) ? 0 : t;
+    }
+
+    function parseExpiry(d) {
+      var s = String(d || '').trim();
+      if (!s) return Date.UTC(9999, 11, 31);
+      var t = parseISO(s);
+      return t || 0;
+    }
+
+    function csvEscape(v) {
+      var s = (v === undefined || v === null) ? '' : String(v);
+      s = s.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      if (s.indexOf('"') !== -1) s = s.replace(/"/g, '""');
+      // для ru-локали используем разделитель ";"
+      if (/[";\n]/.test(s)) s = '"' + s + '"';
+      return s;
+    }
+
+    function nowStamp() {
+      var d = new Date();
+      var yyyy = d.getFullYear();
+      var mm = String(d.getMonth() + 1).padStart(2, '0');
+      var dd = String(d.getDate()).padStart(2, '0');
+      var hh = String(d.getHours()).padStart(2, '0');
+      var mi = String(d.getMinutes()).padStart(2, '0');
+      return yyyy + mm + dd + '_' + hh + mi;
+    }
+
+    function exportTeamCSV() {
+      var rows = sortTeamItems(applyTeamFilters(teamAll));
+      if (!rows || rows.length === 0) return;
+
+      var delim = ';';
+      var header = ['№', 'Тип', 'Сотрудник', 'Руководитель', 'Грейд', 'Модуль', 'Сертификат', 'Профиль', 'Дата выдачи', 'Действителен до', 'Статус', 'Оценка'];
+      var lines = [];
+      lines.push(header.map(csvEscape).join(delim));
+
+      rows.forEach(function (c) {
+        var expRaw = String(c.expires_at || '').trim();
+        var expLabel = expRaw ? expRaw : 'Бессрочно';
+        var st = teamStatusBadge(c).text;
+        var grade = teamGradeText(c);
+        var topic = (c.cert_type === 'internal') ? (c.topic || '') : '';
+        var row = [
+          c.id,
+          certTypeLabel(c.cert_type),
+          (c.snapshot_full_name || ''),
+          (c.snapshot_manager_name || ''),
+          (c.snapshot_position || ''),
+          (c.snapshot_module || 'Модуль Сертификации'),
+          (c.name || ''),
+          topic,
+          (c.issued_at || ''),
+          expLabel,
+          st,
+          grade
+        ];
+        lines.push(row.map(csvEscape).join(delim));
+      });
+
+      // BOM для корректного открытия в Excel
+      var csv = '\ufeff' + lines.join('\r\n');
+      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'сертификаты_сотрудников_' + nowStamp() + '.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) {} }, 1000);
     }
 
     function normStatusKey(c) {
@@ -597,8 +691,8 @@
       }
       if (teamSortKey === 'dates') {
         // сначала по сроку действия, затем по дате выдачи
-        var ae = parseISO(a.expires_at);
-        var be = parseISO(b.expires_at);
+        var ae = parseExpiry(a.expires_at);
+        var be = parseExpiry(b.expires_at);
         if (ae !== be) return ae - be;
         var ai = parseISO(a.issued_at);
         var bi = parseISO(b.issued_at);
@@ -620,6 +714,75 @@
         return teamSortDir === 'asc' ? r : -r;
       });
       return arr;
+    }
+
+    function setExportEnabled(enabled) {
+      if (!exportTeamCsvBtn) return;
+      exportTeamCsvBtn.disabled = !enabled;
+    }
+
+    function csvEscape(value) {
+      var s = String(value === undefined || value === null ? '' : value);
+      s = s.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      if (s.indexOf('"') >= 0) s = s.replace(/"/g, '""');
+      // разделитель CSV — ';' (удобно для Excel в RU)
+      if (/[";\n]/.test(s)) s = '"' + s + '"';
+      return s;
+    }
+
+    function nowStamp() {
+      var d = new Date();
+      var yyyy = d.getFullYear();
+      var mm = String(d.getMonth() + 1).padStart(2, '0');
+      var dd = String(d.getDate()).padStart(2, '0');
+      var hh = String(d.getHours()).padStart(2, '0');
+      var mi = String(d.getMinutes()).padStart(2, '0');
+      return yyyy + mm + dd + '_' + hh + mi;
+    }
+
+    function exportTeamCSV() {
+      var rows = sortTeamItems(applyTeamFilters(teamAll));
+      if (!rows || rows.length === 0) return;
+
+      var delim = ';';
+      var header = ['№', 'Тип', 'Сотрудник', 'Руководитель', 'Грейд', 'Модуль', 'Сертификат', 'Профиль', 'Дата выдачи', 'Действителен до', 'Статус', 'Оценка'];
+      var lines = [header.map(csvEscape).join(delim)];
+
+      rows.forEach(function (c) {
+        var expRaw = String(c.expires_at || '').trim();
+        var expLabel = expRaw ? expRaw : 'Бессрочно';
+        var st = teamStatusBadge(c).text;
+        var grade = teamGradeText(c);
+        var topic = (c.cert_type === 'internal') ? (c.topic || '') : '';
+        var manager = c.snapshot_manager_name || '';
+        var vals = [
+          c.id,
+          certTypeLabel(c.cert_type),
+          c.snapshot_full_name || '',
+          manager,
+          c.snapshot_position || '',
+          c.snapshot_module || 'Модуль Сертификации',
+          c.name || '',
+          topic,
+          c.issued_at || '',
+          expLabel,
+          st,
+          grade
+        ];
+        lines.push(vals.map(csvEscape).join(delim));
+      });
+
+      // BOM для корректного открытия в Excel
+      var csv = '\ufeff' + lines.join('\r\n');
+      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'сертификаты_сотрудников_' + nowStamp() + '.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) {} }, 1000);
     }
 
     function updateTeamSortIndicators() {
@@ -778,6 +941,9 @@
 
       var filtered = sortTeamItems(applyTeamFilters(teamAll));
 
+      // экспорт доступен только если есть строки в текущем представлении
+      setExportEnabled(!!(filtered && filtered.length));
+
       if (teamScopeHint) {
         var msg = teamScopeText || '';
         if (teamCanRevoke) msg += (msg ? ' • ' : '') + 'Вы можете отзывать сертификаты.';
@@ -852,7 +1018,26 @@
 
         // Даты
         var tdDates = el('td');
-        tdDates.appendChild(el('div', 'cell-main', fmtDateRange(c.issued_at, c.expires_at) || '—'));
+        var expRaw = String(c.expires_at || '').trim();
+        tdDates.appendChild(el('div', 'cell-main', fmtDateRange(c.issued_at, expRaw) || '—'));
+
+        // подсказка по сроку: бессрочный / истекает скоро
+        var nowTs = Date.now();
+        var expTs = parseExpiry(expRaw);
+        var horizonTs = nowTs + 30 * 24 * 60 * 60 * 1000;
+        if (!expRaw) {
+          var subP = el('div', 'cell-sub');
+          subP.appendChild(el('span', 'badge badge--meta badge--meta-perpetual', 'Бессрочный'));
+          tdDates.appendChild(subP);
+        } else if (expTs && expTs >= nowTs && expTs <= horizonTs && c.status !== 'expired') {
+          tr.classList.add('row--expiring');
+          var subS = el('div', 'cell-sub');
+          subS.appendChild(el('span', 'badge badge--meta badge--meta-soon', 'Истекает скоро'));
+          tdDates.appendChild(subS);
+        } else if ((c.status === 'expired') || (expTs && expTs < nowTs)) {
+          tr.classList.add('row--expired');
+        }
+
         tr.appendChild(tdDates);
 
         // Статус
@@ -965,6 +1150,7 @@
           teamAll = [];
           teamCanRevoke = false;
           teamScopeText = '';
+          setExportEnabled(false);
           if (teamTableBody) teamTableBody.innerHTML = '';
           if (teamTableWrap) teamTableWrap.style.display = 'none';
           if (teamTableEmpty) teamTableEmpty.style.display = 'none';
@@ -1047,6 +1233,8 @@
     if (teamFilter) teamFilter.addEventListener('change', function () { renderTeam(); });
     if (teamModuleFilter) teamModuleFilter.addEventListener('change', function () { renderTeam(); });
     if (teamGradeFilter) teamGradeFilter.addEventListener('change', function () { renderTeam(); });
+    if (teamExpiryFilter) teamExpiryFilter.addEventListener('change', function () { renderTeam(); });
+    if (exportTeamCsvBtn) exportTeamCsvBtn.addEventListener('click', function () { exportTeamCSV(); });
 
     bindTeamSorting();
 

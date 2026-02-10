@@ -134,6 +134,13 @@
                         <option value="valid">Действительны</option>
                         <option value="expired">Просрочены</option>
                     </select>
+                    <select class="select-sm" id="teamExpiryFilter">
+                        <option value="all">Все сроки</option>
+                        <option value="perpetual">Бессрочные</option>
+                        <option value="with_expiry">Со сроком</option>
+                        <option value="expiring_soon">Истекают скоро</option>
+                    </select>
+                    <button class="btn btn--outline" id="exportTeamCsvBtn" type="button">Экспорт CSV</button>
                 </div>
 
                 <div class="form-hint" id="teamScopeHint" style="display:none;"></div>
