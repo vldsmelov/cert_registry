@@ -1637,3 +1637,203 @@ body {
 .badge {
     border: 1px solid rgba(33, 87, 255, 0.18);
 }
+
+/* ------------------------------
+   Таблица сертификатов сотрудников
+------------------------------ */
+
+.cert-table-wrap {
+    margin: 0 12px 18px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    overflow: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+.cert-table {
+    width: 100%;
+    min-width: 1100px;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.82);
+}
+
+.cert-table thead th {
+    text-align: left;
+    padding: 12px 12px;
+    background: rgba(0, 0, 0, 0.03);
+    color: rgba(0, 0, 0, 0.62);
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+/* сортировка по клику на заголовок */
+.cert-table thead th.th-sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.cert-table thead th.th-sortable:after {
+    content: '↕';
+    margin-left: 6px;
+    font-size: 11px;
+    opacity: 0.55;
+}
+
+.cert-table thead th.th-sortable.is-sorted.is-asc:after {
+    content: '↑';
+    opacity: 0.85;
+}
+
+.cert-table thead th.th-sortable.is-sorted.is-desc:after {
+    content: '↓';
+    opacity: 0.85;
+}
+
+.cert-table thead th:first-child {
+    border-top-left-radius: 18px;
+}
+
+.cert-table thead th:last-child {
+    border-top-right-radius: 18px;
+}
+
+.cert-table tbody td {
+    padding: 12px 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    vertical-align: top;
+}
+
+.cert-table tbody tr:hover {
+    background: rgba(33, 87, 255, 0.06);
+}
+
+.table-link {
+    color: #2157ff;
+    text-decoration: none;
+    font-weight: 900;
+}
+
+.table-link:hover {
+    text-decoration: underline;
+}
+
+.cell-title {
+    font-weight: 900;
+}
+
+.cell-sub {
+    margin-top: 2px;
+    font-size: 11px;
+    color: rgba(0, 0, 0, 0.62);
+}
+
+.cell-actions {
+    white-space: nowrap;
+}
+
+.cell-muted {
+    color: rgba(0, 0, 0, 0.35);
+}
+
+/* бейджи статусов в таблице */
+.badge--status-valid {
+    background: rgba(16, 185, 129, 0.14);
+    color: #0f8a61;
+}
+
+.badge--status-expired {
+    background: rgba(245, 158, 11, 0.16);
+    color: #b45309;
+}
+
+.badge--status-pending {
+    background: rgba(245, 158, 11, 0.14);
+    color: #b45309;
+}
+
+.badge--status-passed {
+    background: rgba(33, 87, 255, 0.12);
+    color: #2157ff;
+}
+
+.badge--status-failed {
+    background: rgba(217, 48, 37, 0.12);
+    color: #d93025;
+}
+
+.badge--status-revoked {
+    background: rgba(107, 114, 128, 0.16);
+    color: #374151;
+}
+
+/* маленькая кнопка */
+.btn--xs {
+    height: 30px;
+    padding: 0 10px;
+    font-size: 12px;
+    border-radius: 12px;
+}
+
+/* быстрые оценки */
+.quick-grade {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.grade-btn {
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, 0.10);
+    background: rgba(0, 0, 0, 0.02);
+    color: rgba(0, 0, 0, 0.78);
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.grade-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.grade-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.grade-btn--gold {
+    background: rgba(245, 158, 11, 0.16);
+    border-color: rgba(245, 158, 11, 0.28);
+    color: #92400e;
+}
+
+.grade-btn--silver {
+    background: rgba(107, 114, 128, 0.14);
+    border-color: rgba(107, 114, 128, 0.26);
+    color: #374151;
+}
+
+.grade-btn--bronze {
+    background: rgba(160, 82, 45, 0.14);
+    border-color: rgba(160, 82, 45, 0.26);
+    color: #7c2d12;
+}
+
+.grade-btn--fail {
+    background: rgba(217, 48, 37, 0.12);
+    border-color: rgba(217, 48, 37, 0.20);
+    color: #d93025;
+}
+
+
+/* состояние загрузки для кнопок */
+.btn.is-loading, .grade-btn.is-loading {
+    opacity: 0.7;
+}

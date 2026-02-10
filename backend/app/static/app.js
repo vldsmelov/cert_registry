@@ -74,15 +74,23 @@
     var reqList = document.getElementById('reqList');
     var reqEmpty = document.getElementById('reqEmpty');
 
-    // team
-    var teamInternalList = document.getElementById('teamInternalList');
-    var teamExternalList = document.getElementById('teamExternalList');
+    // team (таблица)
+    var teamTableWrap = document.getElementById('teamTableWrap');
+    var teamTableBody = document.getElementById('teamTableBody');
+    var teamTableEmpty = document.getElementById('teamTableEmpty');
     var teamEmpty = document.getElementById('teamEmpty');
-    var teamInternalEmpty = document.getElementById('teamInternalEmpty');
-    var teamExternalEmpty = document.getElementById('teamExternalEmpty');
     var teamSearch = document.getElementById('teamSearch');
     var teamFilter = document.getElementById('teamFilter');
+    var teamModuleFilter = document.getElementById('teamModuleFilter');
+    var teamGradeFilter = document.getElementById('teamGradeFilter');
     var teamScopeHint = document.getElementById('teamScopeHint');
+
+    // сортировка таблицы сертификатов сотрудников
+    var teamSortKey = 'id';
+    var teamSortDir = 'desc';
+    var teamTable = document.getElementById('teamTable');
+    var teamSortHeaders = teamTable ? Array.prototype.slice.call(teamTable.querySelectorAll('thead th[data-sort]')) : [];
+
 
     // modals (add)
     var addModal = document.getElementById('certModal');
@@ -449,11 +457,84 @@
       renderCards(reqList, reqEmpty, items, { emptyText: 'Нет запросов на экзамен.', variant: 'cert-card--request', showEmployee: true, canExam: true, me: cachedMe });
     }
 
+    function setSelectOptions(selectEl, values, allLabel) {
+      if (!selectEl) return;
+      var selected = selectEl.value || 'all';
+      selectEl.innerHTML = '';
+      var optAll = document.createElement('option');
+      optAll.value = 'all';
+      optAll.textContent = allLabel || 'Все';
+      selectEl.appendChild(optAll);
+      (values || []).forEach(function (v) {
+        var o = document.createElement('option');
+        o.value = v;
+        o.textContent = v;
+        selectEl.appendChild(o);
+      });
+      // restore selection if possible
+      var has = Array.prototype.some.call(selectEl.options, function (o) { return o.value === selected; });
+      selectEl.value = has ? selected : 'all';
+    }
+
+    function buildTeamFilterOptions() {
+      var mods = {};
+      var grades = {};
+      (teamAll || []).forEach(function (c) {
+        var m = c.snapshot_module || 'Модуль Сертификации';
+        if (m) mods[m] = true;
+        var g = c.snapshot_position || '';
+        if (g) grades[g] = true;
+      });
+      var modList = Object.keys(mods).sort();
+      var gradeList = Object.keys(grades).sort();
+      setSelectOptions(teamModuleFilter, modList, 'Все модули');
+      setSelectOptions(teamGradeFilter, gradeList, 'Все грейды');
+    }
+
+    function setSelectOptions(selectEl, values, allLabel) {
+      if (!selectEl) return;
+      var current = selectEl.value || 'all';
+      var opts = ['all'];
+      var labels = {'all': allLabel || 'Все'};
+      (values || []).forEach(function (v) {
+        if (!v) return;
+        if (opts.indexOf(v) === -1) opts.push(v);
+      });
+      selectEl.innerHTML = '';
+      opts.forEach(function (v) {
+        var o = document.createElement('option');
+        o.value = v;
+        o.textContent = labels[v] || v;
+        selectEl.appendChild(o);
+      });
+      if (opts.indexOf(current) === -1) current = 'all';
+      selectEl.value = current;
+    }
+
+    function buildTeamFilterOptions() {
+      if (!teamModuleFilter && !teamGradeFilter) return;
+      var mods = {};
+      var grades = {};
+      (teamAll || []).forEach(function (c) {
+        var mod = c.snapshot_module || 'Модуль Сертификации';
+        if (mod) mods[mod] = true;
+        var gr = c.snapshot_position || '';
+        if (gr) grades[gr] = true;
+      });
+      var modList = Object.keys(mods).sort();
+      var gradeList = Object.keys(grades).sort();
+      setSelectOptions(teamModuleFilter, modList, 'Все модули');
+      setSelectOptions(teamGradeFilter, gradeList, 'Все грейды');
+    }
+
     function applyTeamFilters(items) {
       var q = safeLower(teamSearch && teamSearch.value);
       var f = (teamFilter && teamFilter.value) || 'all';
+      var m = (teamModuleFilter && teamModuleFilter.value) || 'all';
+      var g = (teamGradeFilter && teamGradeFilter.value) || 'all';
 
       return (items || []).filter(function (c) {
+        // status filter
         if (f === 'pending_exam' && c.workflow_status !== 'pending_exam') return false;
         if (f === 'passed' && c.workflow_status !== 'passed') return false;
         if (f === 'failed' && c.workflow_status !== 'failed') return false;
@@ -461,15 +542,235 @@
         if (f === 'valid' && c.status !== 'valid') return false;
         if (f === 'expired' && c.status !== 'expired') return false;
 
+        // module filter
+        if (m !== 'all') {
+          var cm = c.snapshot_module || 'Модуль Сертификации';
+          if (cm !== m) return false;
+        }
+
+        // grade filter
+        if (g !== 'all') {
+          var cg = c.snapshot_position || '';
+          if (cg !== g) return false;
+        }
+
         if (!q) return true;
-        var hay = safeLower(c.name) + ' ' + safeLower(c.topic) + ' ' + safeLower(c.snapshot_full_name) + ' ' + safeLower(c.snapshot_position) + ' ' + safeLower(c.snapshot_manager_name);
+        var hay = safeLower(c.name) + ' ' + safeLower(c.topic) + ' ' + safeLower(c.snapshot_full_name) + ' ' + safeLower(c.snapshot_position) + ' ' + safeLower(c.snapshot_manager_name) + ' ' + safeLower(c.snapshot_module);
         return hay.indexOf(q) !== -1;
       });
     }
 
+    function parseISO(d) {
+      if (!d) return 0;
+      var t = Date.parse(String(d));
+      return isNaN(t) ? 0 : t;
+    }
+
+    function normStatusKey(c) {
+      if (c.workflow_status === 'revoked') return 'revoked';
+      if (c.status === 'expired') return 'expired';
+      if (c.cert_type === 'internal') {
+        if (c.workflow_status === 'pending_exam') return 'pending_exam';
+        if (c.workflow_status === 'failed') return 'failed';
+        if (c.workflow_status === 'passed') return 'passed';
+      }
+      if (c.status === 'valid') return 'valid';
+      return (c.status || 'unknown');
+    }
+
+    function statusRank(c) {
+      // по умолчанию сортируем так, чтобы проблемы было проще найти
+      var k = normStatusKey(c);
+      var map = { pending_exam: 1, failed: 2, revoked: 3, expired: 4, passed: 5, valid: 6, unknown: 7 };
+      return map[k] !== undefined ? map[k] : 8;
+    }
+
+    function cmp(a, b) {
+      if (teamSortKey === 'id') {
+        return (Number(a.id) || 0) - (Number(b.id) || 0);
+      }
+      if (teamSortKey === 'dates') {
+        // сначала по сроку действия, затем по дате выдачи
+        var ae = parseISO(a.expires_at);
+        var be = parseISO(b.expires_at);
+        if (ae !== be) return ae - be;
+        var ai = parseISO(a.issued_at);
+        var bi = parseISO(b.issued_at);
+        return ai - bi;
+      }
+      if (teamSortKey === 'status') {
+        var ar = statusRank(a);
+        var br = statusRank(b);
+        if (ar !== br) return ar - br;
+        return (Number(a.id) || 0) - (Number(b.id) || 0);
+      }
+      return 0;
+    }
+
+    function sortTeamItems(items) {
+      var arr = (items || []).slice();
+      arr.sort(function (a, b) {
+        var r = cmp(a, b);
+        return teamSortDir === 'asc' ? r : -r;
+      });
+      return arr;
+    }
+
+    function updateTeamSortIndicators() {
+      (teamSortHeaders || []).forEach(function (th) {
+        var key = th.getAttribute('data-sort');
+        var active = key === teamSortKey;
+        th.classList.toggle('is-sorted', active);
+        th.classList.toggle('is-asc', active && teamSortDir === 'asc');
+        th.classList.toggle('is-desc', active && teamSortDir === 'desc');
+      });
+    }
+
+    function bindTeamSorting() {
+      if (!teamSortHeaders || !teamSortHeaders.length) return;
+      teamSortHeaders.forEach(function (th) {
+        th.addEventListener('click', function () {
+          var key = th.getAttribute('data-sort');
+          if (!key) return;
+          if (teamSortKey === key) {
+            teamSortDir = teamSortDir === 'asc' ? 'desc' : 'asc';
+          } else {
+            teamSortKey = key;
+            // для номера по умолчанию показываем новые сверху
+            teamSortDir = (key === 'id') ? 'desc' : 'asc';
+          }
+          updateTeamSortIndicators();
+          renderTeam();
+        });
+      });
+      updateTeamSortIndicators();
+    }
+
+
+
+    function teamStatusBadge(cert) {
+      if (cert.workflow_status === 'revoked') {
+        return { text: 'Отозван', cls: 'badge--status-revoked' };
+      }
+      if (cert.status === 'expired') {
+        return { text: 'Просрочен', cls: 'badge--status-expired' };
+      }
+      if (cert.cert_type === 'internal' && cert.workflow_status === 'pending_exam') {
+        return { text: 'Ожидает экзамен', cls: 'badge--status-pending' };
+      }
+      if (cert.cert_type === 'internal' && cert.workflow_status === 'passed') {
+        return { text: 'Экзамен сдан', cls: 'badge--status-passed' };
+      }
+      if (cert.cert_type === 'internal' && cert.workflow_status === 'failed') {
+        return { text: 'Экзамен не сдан', cls: 'badge--status-failed' };
+      }
+      if (cert.status === 'valid') {
+        return { text: 'Действителен', cls: 'badge--status-valid' };
+      }
+      return { text: cert.status_label || '—', cls: 'badge--status-default' };
+    }
+
+    function teamGradeText(cert) {
+      if (cert.cert_type !== 'internal') return '—';
+      if (cert.workflow_status === 'passed') {
+        var t = cert.exam_grade || '—';
+        if (cert.exam_date) t += ' (' + cert.exam_date + ')';
+        return t;
+      }
+      if (cert.workflow_status === 'failed') {
+        var t2 = 'Не сдан';
+        if (cert.exam_date) t2 += ' (' + cert.exam_date + ')';
+        return t2;
+      }
+      return '—';
+    }
+
+    function isCurrentExaminer(cert) {
+      if (!cachedMe) return false;
+      return cert.cert_type === 'internal' && String(cert.required_examiner_id || '') === String(cachedMe.id);
+    }
+
+    function postQuickExam(certId, grade, btnEl) {
+      if (!certId) return;
+      if (btnEl) {
+        btnEl.disabled = true;
+        btnEl.classList.add('is-loading');
+      }
+      fetch('/api/certificates/' + encodeURIComponent(certId) + '/exam', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ exam_grade: grade, exam_date: todayISO() })
+      })
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+        .then(function (res) {
+          if (!res.ok) {
+            var msg = (res.data && (res.data.detail || res.data.message)) || 'Ошибка';
+            throw new Error(msg);
+          }
+          loadAll();
+        })
+        .catch(function () {
+          // молча — это прототип
+          loadAll();
+        });
+    }
+
+    function postRevoke(certId, reason, btnEl) {
+      if (!certId || !reason) return;
+      if (btnEl) {
+        btnEl.disabled = true;
+        btnEl.classList.add('is-loading');
+      }
+      fetch('/api/certificates/' + encodeURIComponent(certId) + '/revoke', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ reason: reason })
+      })
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+        .then(function (res) {
+          if (!res.ok) {
+            var msg = (res.data && (res.data.detail || res.data.message)) || 'Ошибка';
+            throw new Error(msg);
+          }
+          loadAll();
+        })
+        .catch(function () {
+          loadAll();
+        });
+    }
+
+    function postUnrevoke(certId, btnEl) {
+      if (!certId) return;
+      if (btnEl) {
+        btnEl.disabled = true;
+        btnEl.classList.add('is-loading');
+      }
+      fetch('/api/certificates/' + encodeURIComponent(certId) + '/unrevoke', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: '{}'
+      })
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+        .then(function (res) {
+          if (!res.ok) {
+            var msg = (res.data && (res.data.detail || res.data.message)) || 'Ошибка';
+            throw new Error(msg);
+          }
+          loadAll();
+        })
+        .catch(function () {
+          loadAll();
+        });
+    }
+
+
     function renderTeam() {
-      if (!teamInternalList && !teamExternalList) return;
-      var filtered = applyTeamFilters(teamAll);
+      if (!teamTableBody) return;
+
+      var filtered = sortTeamItems(applyTeamFilters(teamAll));
 
       if (teamScopeHint) {
         var msg = teamScopeText || '';
@@ -478,16 +779,137 @@
         teamScopeHint.style.display = msg ? 'block' : 'none';
       }
 
-      if (teamEmpty) teamEmpty.style.display = 'none';
+      // если не было ошибки загрузки — скрываем сообщение
+      if (teamEmpty && (!teamEmpty.textContent || teamEmpty.textContent.indexOf('Не удалось') === -1)) {
+        teamEmpty.style.display = 'none';
+      }
 
-      var internal = filtered.filter(function (c) { return c.cert_type === 'internal'; });
-      var external = filtered.filter(function (c) { return c.cert_type !== 'internal'; });
+      if (teamTableBody) teamTableBody.innerHTML = '';
 
-      var emptyInternal = teamCanRevoke ? 'Нет внутренних сертификатов в модуле.' : 'Нет внутренних сертификатов сотрудников.';
-      var emptyExternal = teamCanRevoke ? 'Нет внешних сертификатов в модуле.' : 'Нет внешних сертификатов сотрудников.';
+      var emptyText = teamCanRevoke ? 'Нет сертификатов в модуле.' : 'Нет сертификатов сотрудников.';
+      if (!filtered || filtered.length === 0) {
+        if (teamTableWrap) teamTableWrap.style.display = 'none';
+        if (teamTableEmpty) {
+          teamTableEmpty.textContent = emptyText;
+          teamTableEmpty.style.display = 'block';
+        }
+        return;
+      }
 
-      renderGrouped(teamInternalList, teamInternalEmpty, internal, { emptyText: emptyInternal, showEmployee: true, canRevoke: teamCanRevoke, canExam: true, me: cachedMe });
-      renderGrouped(teamExternalList, teamExternalEmpty, external, { emptyText: emptyExternal, showEmployee: true, canRevoke: teamCanRevoke, canExam: false, me: cachedMe });
+      if (teamTableEmpty) teamTableEmpty.style.display = 'none';
+      if (teamTableWrap) teamTableWrap.style.display = 'block';
+
+      filtered.forEach(function (c) {
+        var tr = document.createElement('tr');
+
+        // №
+        var tdId = el('td', 'cell-id');
+        var idLink = el('a', 'table-link', String(c.id));
+        idLink.href = '/certificate/' + encodeURIComponent(c.id);
+        idLink.target = '_blank';
+        idLink.rel = 'noopener';
+        tdId.appendChild(idLink);
+        tr.appendChild(tdId);
+
+        // Тип
+        var tdType = el('td');
+        var bType = el('span', 'badge badge--type', certTypeLabel(c.cert_type));
+        if (c.cert_type === 'internal') bType.classList.add('badge--type-internal');
+        else bType.classList.add('badge--type-external');
+        tdType.appendChild(bType);
+        tr.appendChild(tdType);
+
+        // Сотрудник
+        var tdEmp = el('td', 'cell-emp');
+        tdEmp.appendChild(el('div', 'cell-main', c.snapshot_full_name || ('Сотрудник #' + c.owner_id)));
+        var mgr = c.snapshot_manager_name ? ('Рук.: ' + c.snapshot_manager_name) : '';
+        if (mgr) tdEmp.appendChild(el('div', 'cell-sub', mgr));
+        tr.appendChild(tdEmp);
+
+        // Грейд
+        var tdGrade = el('td');
+        tdGrade.appendChild(el('div', 'cell-main', c.snapshot_position || '—'));
+        tr.appendChild(tdGrade);
+
+        // Модуль
+        var tdMod = el('td');
+        tdMod.appendChild(el('div', 'cell-main', c.snapshot_module || 'Модуль Сертификации'));
+        tr.appendChild(tdMod);
+
+        // Сертификат
+        var tdName = el('td', 'cell-cert');
+        tdName.appendChild(el('div', 'cell-main', c.name || 'Сертификат'));
+        if (c.cert_type === 'internal' && c.topic) {
+          tdName.appendChild(el('div', 'cell-sub', 'Профиль: ' + c.topic));
+        }
+        tr.appendChild(tdName);
+
+        // Даты
+        var tdDates = el('td');
+        tdDates.appendChild(el('div', 'cell-main', fmtDateRange(c.issued_at, c.expires_at) || '—'));
+        tr.appendChild(tdDates);
+
+        // Статус
+        var tdSt = el('td');
+        var st = teamStatusBadge(c);
+        tdSt.appendChild(el('span', 'badge ' + st.cls, st.text));
+        tr.appendChild(tdSt);
+
+        // Оценка
+        var tdGr = el('td');
+        var canQuick = (c.cert_type === 'internal' && c.workflow_status === 'pending_exam' && isCurrentExaminer(c));
+        if (canQuick) {
+          var wrap = el('div', 'quick-grade');
+          ['Золото', 'Серебро', 'Бронза', 'Не сдан'].forEach(function (g) {
+            var btn = el('button', 'grade-btn', g);
+            btn.type = 'button';
+            btn.classList.add(g === 'Золото' ? 'grade-btn--gold' : g === 'Серебро' ? 'grade-btn--silver' : g === 'Бронза' ? 'grade-btn--bronze' : 'grade-btn--fail');
+            btn.addEventListener('click', function (e) {
+              e.stopPropagation();
+              postQuickExam(c.id, g, btn);
+            });
+            wrap.appendChild(btn);
+          });
+          tdGr.appendChild(wrap);
+        } else {
+          tdGr.appendChild(el('div', 'cell-main', teamGradeText(c)));
+          if (c.cert_type === 'internal' && c.workflow_status === 'pending_exam') {
+            var who = c.required_examiner_name ? ('Экзаменатор: ' + c.required_examiner_name) : '';
+            if (who) tdGr.appendChild(el('div', 'cell-sub', who));
+          }
+        }
+        tr.appendChild(tdGr);
+        // Actions
+        var tdAct = el('td', 'cell-actions');
+        if (teamCanRevoke) {
+          if (c.workflow_status === 'revoked') {
+            var btnUn = el('button', 'btn btn--xs btn--outline', 'Снять отзыв');
+            btnUn.type = 'button';
+            btnUn.addEventListener('click', function (e) {
+              e.stopPropagation();
+              if (!confirm('Снять отзыв сертификата №' + c.id + '?')) return;
+              postUnrevoke(c.id, btnUn);
+            });
+            tdAct.appendChild(btnUn);
+          } else {
+            var btnRev = el('button', 'btn btn--xs btn--danger', 'Отозвать');
+            btnRev.type = 'button';
+            btnRev.addEventListener('click', function (e) {
+              e.stopPropagation();
+              var reason = prompt('Причина отзыва сертификата №' + c.id + ':', '');
+              reason = (reason || '').trim();
+              if (!reason) return;
+              postRevoke(c.id, reason, btnRev);
+            });
+            tdAct.appendChild(btnRev);
+          }
+        } else {
+          tdAct.appendChild(el('span', 'cell-muted', ''));
+        }
+        tr.appendChild(tdAct);
+
+        teamTableBody.appendChild(tr);
+      });
     }
 
     function loadMy() {
@@ -517,20 +939,30 @@
     }
 
     function loadTeam() {
-      if (!teamInternalList && !teamExternalList) return Promise.resolve();
+      if (!teamTableBody) return Promise.resolve();
       return fetch('/api/certificates/team', { credentials: 'same-origin' })
         .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
         .then(function (data) {
           teamAll = (data && data.items) || [];
           teamCanRevoke = !!(data && data.can_revoke);
           teamScopeText = (data && data.scope) || '';
+
+          if (teamEmpty) {
+            teamEmpty.style.display = 'none';
+            teamEmpty.textContent = '';
+          }
+
+          buildTeamFilterOptions();
           renderTeam();
         })
         .catch(function () {
           teamAll = [];
           teamCanRevoke = false;
           teamScopeText = '';
-          renderTeam();
+          if (teamTableBody) teamTableBody.innerHTML = '';
+          if (teamTableWrap) teamTableWrap.style.display = 'none';
+          if (teamTableEmpty) teamTableEmpty.style.display = 'none';
+          if (teamScopeHint) teamScopeHint.style.display = 'none';
           if (teamEmpty) {
             teamEmpty.style.display = 'block';
             teamEmpty.textContent = 'Не удалось загрузить список.';
@@ -598,6 +1030,10 @@
     // Team filter bindings
     if (teamSearch) teamSearch.addEventListener('input', function () { renderTeam(); });
     if (teamFilter) teamFilter.addEventListener('change', function () { renderTeam(); });
+    if (teamModuleFilter) teamModuleFilter.addEventListener('change', function () { renderTeam(); });
+    if (teamGradeFilter) teamGradeFilter.addEventListener('change', function () { renderTeam(); });
+
+    bindTeamSorting();
 
     // Клик по карточке открывает сертификат (чтобы не целиться в заголовок)
     document.addEventListener('click', function (e) {

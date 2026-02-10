@@ -378,6 +378,59 @@ def revoke_certificate(
     return dict(row2) if row2 else cert
 
 
+def unrevoke_certificate(
+    *,
+    cert_id: int,
+    hr_id: int,
+    allowed_module: Optional[str],
+) -> Dict[str, Any]:
+    """Снять отзыв сертификата (только HR).
+
+    В прототипе восстанавливаем статус по данным сертификата:
+    - internal: если есть exam_grade -> passed/failed; иначе pending_exam
+    - external: active
+    """
+    with _connect() as conn:
+        row = conn.execute("SELECT * FROM certificates WHERE id = ?", (int(cert_id),)).fetchone()
+        if not row:
+            raise ValueError("certificate_not_found")
+        cert = dict(row)
+
+        if cert.get("workflow_status") != 'revoked':
+            # нечего снимать — просто возвращаем
+            return cert
+
+        # Ограничение по подконтрольному модулю (если задано)
+        if allowed_module:
+            cert_module = cert.get("snapshot_module") or MODULE_CERTIFICATION
+            if cert_module != allowed_module:
+                raise PermissionError("module_mismatch")
+
+        new_status = 'active'
+        if str(cert.get('cert_type') or '') == 'internal':
+            if cert.get('exam_grade'):
+                new_status = 'failed' if str(cert.get('exam_grade')) == 'Не сдан' else 'passed'
+            else:
+                # если есть экзаменатор — значит ожидание экзамена
+                new_status = 'pending_exam' if cert.get('required_examiner_id') else 'active'
+
+        conn.execute(
+            """
+            UPDATE certificates
+            SET workflow_status = ?,
+                revoked_by_id = NULL,
+                revoked_by_name = NULL,
+                revoked_reason = NULL,
+                revoked_at = NULL
+            WHERE id = ?
+            """,
+            (new_status, int(cert_id)),
+        )
+        row2 = conn.execute("SELECT * FROM certificates WHERE id = ?", (int(cert_id),)).fetchone()
+        conn.commit()
+    return dict(row2) if row2 else cert
+
+
 def compute_status(expires_at: str) -> Tuple[str, str]:
     """Возвращает (status_code, label) на основе даты окончания."""
     try:

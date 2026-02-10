@@ -119,8 +119,14 @@
             <div class="tab-panel" id="tab-team" data-tabpanel="team">
                 <div class="toolbar">
                     <input class="search-input" id="teamSearch" type="text" placeholder="Поиск по ФИО, сертификату, профилю" />
+                    <select class="select-sm" id="teamModuleFilter">
+                        <option value="all">Все модули</option>
+                    </select>
+                    <select class="select-sm" id="teamGradeFilter">
+                        <option value="all">Все грейды</option>
+                    </select>
                     <select class="select-sm" id="teamFilter">
-                        <option value="all">Все</option>
+                        <option value="all">Все статусы</option>
                         <option value="pending_exam">Ожидают экзамен</option>
                         <option value="passed">Экзамен сдан</option>
                         <option value="failed">Экзамен не сдан</option>
@@ -133,17 +139,26 @@
                 <div class="form-hint" id="teamScopeHint" style="display:none;"></div>
                 <div class="cert-empty" id="teamEmpty" style="display:none;"></div>
 
-                <div class="section">
-                    <h2 class="section-title">Внутренние сертификаты</h2>
-                    <div class="cert-empty" id="teamInternalEmpty" style="display:none;"></div>
-                    <section class="cert-grid" id="teamInternalList"></section>
+                <div class="cert-table-wrap" id="teamTableWrap" style="display:none;">
+                    <table class="cert-table" id="teamTable">
+                        <thead>
+                            <tr>
+                                <th class="th-sortable" data-sort="id">№</th>
+                                <th>Тип</th>
+                                <th>Сотрудник</th>
+                                <th>Грейд</th>
+                                <th>Модуль</th>
+                                <th>Сертификат</th>
+                                <th class="th-sortable" data-sort="dates">Даты</th>
+                                <th class="th-sortable" data-sort="status">Статус</th>
+                                <th>Оценка</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="teamTableBody"></tbody>
+                    </table>
                 </div>
-
-                <div class="section">
-                    <h2 class="section-title">Внешние сертификаты</h2>
-                    <div class="cert-empty" id="teamExternalEmpty" style="display:none;"></div>
-                    <section class="cert-grid" id="teamExternalList"></section>
-                </div>
+                <div class="cert-empty" id="teamTableEmpty" style="display:none;"></div>
             </div>
 
             <!-- Добавление сертификата -->

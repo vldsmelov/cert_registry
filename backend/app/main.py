@@ -36,6 +36,7 @@ from .db import (
     list_exam_requests,
     list_user_profiles,
     revoke_certificate,
+    unrevoke_certificate,
     set_exam_result,
     upsert_user_profile,
 )
@@ -944,6 +945,29 @@ async def api_revoke_certificate(cert_id: int, request: Request):
             hr_id=user.id,
             hr_name=user.full_name,
             reason=reason,
+            allowed_module=user.controlled_module,
+        )
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="Not allowed")
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    decorate_cert(cert)
+    return JSONResponse(cert)
+
+
+@app.post("/api/certificates/{cert_id:int}/unrevoke")
+async def api_unrevoke_certificate(cert_id: int, request: Request):
+    user = current_user(request)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if user.role != "hr":
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    try:
+        cert = unrevoke_certificate(
+            cert_id=int(cert_id),
+            hr_id=user.id,
             allowed_module=user.controlled_module,
         )
     except PermissionError:
