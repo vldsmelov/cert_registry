@@ -101,8 +101,31 @@
                     <a class="btn" href="/certification">Назад</a>
                     <a class="btn" href="/api/certificates/{{ cert.id }}/image" target="_blank" rel="noopener">Открыть изображение</a>
                     <a class="btn btn--primary" href="/api/certificates/{{ cert.id }}/pdf">Скачать PDF</a>
+                    {% if can_exam %}
+                    <button class="btn btn--primary" type="button" id="detailExamBtn">Поставить оценку</button>
+                    {% endif %}
+                    {% if can_hr %}
+                        {% if cert.workflow_status != 'revoked' %}
+                        <button class="btn btn--danger" type="button" id="detailRevokeBtn">Отозвать</button>
+                        {% else %}
+                        <button class="btn btn--outline" type="button" id="detailUnrevokeBtn">Принять</button>
+                        {% endif %}
+                        <button class="btn btn--outline" type="button" id="detailEditBtn">Редактировать</button>
+                    {% endif %}
+
                 </div>
             </div>
+
+            <div id="certDetailRoot"
+                data-cert-id="{{ cert.id }}"
+                data-share-url="{{ share_url }}"
+                data-can-exam="{% if can_exam %}1{% else %}0{% endif %}"
+                data-can-hr="{% if can_hr %}1{% else %}0{% endif %}"
+                data-cert-type="{{ cert.cert_type }}"
+                data-topic="{{ cert.topic or '' }}"
+                data-name="{{ cert.name }}"
+                data-issued-at="{{ cert.issued_at }}"
+                data-expires-at="{{ cert.expires_at or '' }}"></div>
 
             <div class="detail-grid">
                 <section class="detail-card">
@@ -121,9 +144,18 @@
                         <div class="kv-row"><div class="kv-k">Профиль</div><div class="kv-v">{{ cert.topic or '—' }}</div></div>
                         {% endif %}
                         <div class="kv-row"><div class="kv-k">Дата выдачи</div><div class="kv-v">{{ cert.issued_at }}</div></div>
-                        <div class="kv-row"><div class="kv-k">Действителен до</div><div class="kv-v">{{ cert.expires_at }}</div></div>
+                        <div class="kv-row"><div class="kv-k">Действителен до</div><div class="kv-v">{{ cert.expires_at or 'Бессрочно' }}</div></div>
                         <div class="kv-row"><div class="kv-k">Статус</div><div class="kv-v">{{ cert.status_label }}</div></div>
                     </div>
+                    <div class="qr-wrap open" style="margin-top:12px;">
+                        <img class="qr-img" src="/api/certificates/{{ cert.id }}/qr" alt="QR" />
+                        <div class="qr-meta">
+                            <div>Ссылка для просмотра сертификата</div>
+                            <a class="qr-link" href="{{ share_url }}" target="_blank" rel="noopener">{{ share_url }}</a>
+                            <button class="btn btn--outline btn--sm" type="button" id="copyShareLinkBtn">Скопировать ссылку</button>
+                        </div>
+                    </div>
+
 
                     {% if cert.cert_type == 'internal' and cert.workflow_status == 'pending_exam' %}
                     <div class="detail-callout">
@@ -149,6 +181,107 @@
 
                 </section>
             </div>
+
+            <!-- Модалки действий на карточке сертификата -->
+            <div class="modal" id="examModal" aria-hidden="true">
+                <div class="modal-backdrop" data-close="1"></div>
+                <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="examModalTitle">
+                    <div class="modal-header">
+                        <h2 id="examModalTitle">Результат экзамена</h2>
+                        <button class="modal-close" type="button" data-close="1">✕</button>
+                    </div>
+                    <form id="examForm" class="modal-form">
+                        <input type="hidden" name="cert_id" />
+                        <div class="form-row">
+                            <label class="form-field">
+                                <span>Оценка</span>
+                                <select name="exam_grade" required>
+                                    <option value="Золото">Золото</option>
+                                    <option value="Серебро">Серебро</option>
+                                    <option value="Бронза">Бронза</option>
+                                    <option value="Не сдан">Не сдан</option>
+                                </select>
+                            </label>
+                            <label class="form-field">
+                                <span>Дата сдачи</span>
+                                <input name="exam_date" type="date" required />
+                            </label>
+                        </div>
+                        <div class="modal-actions">
+                            <button class="btn btn--primary" type="submit">Сохранить</button>
+                            <button class="btn" type="button" data-close="1">Отмена</button>
+                        </div>
+                        <div class="form-error" id="examFormError" aria-live="polite"></div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="modal" id="revokeModal" aria-hidden="true">
+                <div class="modal-backdrop" data-close="1"></div>
+                <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="revokeModalTitle">
+                    <div class="modal-header">
+                        <h2 id="revokeModalTitle">Отозвать сертификат</h2>
+                        <button class="modal-close" type="button" data-close="1">✕</button>
+                    </div>
+                    <form id="revokeForm" class="modal-form">
+                        <input type="hidden" name="cert_id" />
+                        <label class="form-field">
+                            <span>Причина отзыва</span>
+                            <textarea name="reason" rows="4" placeholder="Например: данные не подтверждены / истёк регламент / ошибка оформления" required></textarea>
+                        </label>
+                        <div class="modal-actions">
+                            <button class="btn btn--danger" type="submit">Отозвать</button>
+                            <button class="btn" type="button" data-close="1">Отмена</button>
+                        </div>
+                        <div class="form-error" id="revokeFormError" aria-live="polite"></div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="modal" id="editModal" aria-hidden="true">
+                <div class="modal-backdrop" data-close="1"></div>
+                <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+                    <div class="modal-header">
+                        <h2 id="editModalTitle">Редактировать сертификат</h2>
+                        <button class="modal-close" type="button" data-close="1">✕</button>
+                    </div>
+                    <form id="editForm" class="modal-form">
+                        <label class="form-field">
+                            <span>Название</span>
+                            <input name="name" type="text" required />
+                        </label>
+                        <label class="form-field" id="editTopicField">
+                            <span>Профиль сдачи</span>
+                            <select name="topic">
+                                <option value="Корпоративная культура">Корпоративная культура</option>
+                                <option value="Оказание первой помощи">Оказание первой помощи</option>
+                            </select>
+                        </label>
+                        <div class="form-row">
+                            <label class="form-field">
+                                <span>Дата выдачи</span>
+                                <input name="issued_at" type="date" required />
+                            </label>
+                            <label class="form-field" id="editExpiresField">
+                                <span>Действителен до</span>
+                                <input name="expires_at" type="date" />
+                            </label>
+                        </div>
+                        <div class="radio-row" style="margin-top:6px;">
+                            <label class="radio-pill">
+                                <input type="checkbox" name="is_perpetual" id="isPerpetualEdit" checked />
+                                <span>Бессрочный</span>
+                            </label>
+                        </div>
+                        <div class="modal-actions">
+                            <button class="btn btn--primary" type="submit">Сохранить</button>
+                            <button class="btn" type="button" data-close="1">Отмена</button>
+                        </div>
+                        <div class="form-error" id="editFormError" aria-live="polite"></div>
+                    </form>
+                </div>
+            </div>
+
 
         </main>
     </div>

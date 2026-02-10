@@ -199,9 +199,15 @@
                                 <span>Дата выдачи</span>
                                 <input name="issued_at" type="date" required />
                             </label>
-                            <label class="form-field">
+                            <label class="form-field" id="expiresField">
                                 <span>Действителен до</span>
-                                <input name="expires_at" type="date" required />
+                                <input name="expires_at" type="date" />
+                            </label>
+                        </div>
+                        <div class="radio-row" style="margin-top:6px;">
+                            <label class="radio-pill">
+                                <input type="checkbox" name="is_perpetual" id="isPerpetualCertAdd" checked />
+                                <span>Бессрочный</span>
                             </label>
                         </div>
                         <div class="modal-actions">

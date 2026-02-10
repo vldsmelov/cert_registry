@@ -36,8 +36,10 @@
   }
 
   function fmtDateRange(issued, expires) {
-    if (!issued || !expires) return '';
-    return issued + ' — ' + expires;
+    if (!issued) return '';
+    var exp = String(expires || '').trim();
+    if (!exp) exp = 'Бессрочно';
+    return issued + ' — ' + exp;
   }
 
   function statusIcon(status) {
@@ -98,6 +100,10 @@
     var addErr = document.getElementById('certFormError');
     var topicField = document.getElementById('topicField');
     var examHint = document.getElementById('examHint');
+
+    // бессрочность
+    var expiresField = document.getElementById('expiresField');
+    var perpetualAdd = document.getElementById('isPerpetualCertAdd');
 
     // modals (exam)
     var examModal = document.getElementById('examModal');
@@ -999,6 +1005,15 @@
       }
     }
 
+    function syncPerpetualUI() {
+      if (!expiresField || !perpetualAdd) return;
+      var checked = !!perpetualAdd.checked;
+      expiresField.style.display = checked ? 'none' : 'block';
+      var expInput = expiresField.querySelector('input[name=\"expires_at\"]');
+      if (expInput) expInput.required = !checked;
+      if (checked && expInput) expInput.value = '';
+    }
+
     function setActiveTab(key) {
       tabBtns.forEach(function (b) {
         var active = b.getAttribute('data-tab') === key;
@@ -1054,6 +1069,8 @@
         // добавлять можно из любой вкладки — переключаем на "Мои"
         setActiveTab('my');
         openModal(addModal, addErr, addForm);
+        if (perpetualAdd) perpetualAdd.checked = true;
+        syncPerpetualUI();
         syncAddFormUI();
       });
     }
@@ -1066,19 +1083,31 @@
         }
       });
 
+      if (perpetualAdd) perpetualAdd.addEventListener('change', function(){ syncPerpetualUI(); });
+
       addForm.addEventListener('submit', function (e) {
         e.preventDefault();
         if (addErr) addErr.textContent = '';
 
         var name = addForm.querySelector('input[name=\"name\"]').value.trim();
         var issued_at = addForm.querySelector('input[name=\"issued_at\"]').value.trim();
-        var expires_at = addForm.querySelector('input[name=\"expires_at\"]').value.trim();
+        var is_perpetual = perpetualAdd ? !!perpetualAdd.checked : false;
+        var expires_at = is_perpetual ? '' : addForm.querySelector('input[name=\"expires_at\"]').value.trim();
         var certTypeEl = addForm.querySelector('input[name=\"cert_type\"]:checked');
         var cert_type = certTypeEl ? certTypeEl.value : 'external';
         var topicEl = addForm.querySelector('select[name=\"topic\"]');
         var topic = topicEl ? topicEl.value : '';
 
-        var payload = { name: name, issued_at: issued_at, expires_at: expires_at, cert_type: cert_type };
+        if (!name || !issued_at) {
+          if (addErr) addErr.textContent = 'Заполните название и дату выдачи.';
+          return;
+        }
+        if (!is_perpetual && !expires_at) {
+          if (addErr) addErr.textContent = 'Укажите срок годности или включите бессрочность.';
+          return;
+        }
+
+        var payload = { name: name, issued_at: issued_at, expires_at: expires_at, is_perpetual: is_perpetual, cert_type: cert_type };
         if (cert_type === 'internal') payload.topic = topic;
 
         fetch('/api/certificates', {
@@ -1176,6 +1205,216 @@
     loadAll();
   }
 
+  function initCertificateDetail() {
+    var root = document.getElementById('certDetailRoot');
+    if (!root) return;
+
+    var certId = root.dataset ? root.dataset.certId : null;
+    var shareUrl = root.dataset ? root.dataset.shareUrl : '';
+    var canExam = root.dataset && root.dataset.canExam === '1';
+    var canHr = root.dataset && root.dataset.canHr === '1';
+    var certType = (root.dataset && root.dataset.certType) ? root.dataset.certType : 'external';
+
+    var btnCopy = document.getElementById('copyShareLinkBtn');
+    if (btnCopy) {
+      btnCopy.addEventListener('click', function(){
+        try {
+          if (navigator && navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(shareUrl);
+        } catch (e) {}
+      });
+    }
+
+    function todayISO() {
+      var t = new Date();
+      var yyyy = t.getFullYear();
+      var mm = String(t.getMonth() + 1).padStart(2, '0');
+      var dd = String(t.getDate()).padStart(2, '0');
+      return yyyy + '-' + mm + '-' + dd;
+    }
+
+    function openModal(modalEl, errEl, formEl) {
+      if (!modalEl) return;
+      modalEl.classList.add('open');
+      modalEl.setAttribute('aria-hidden', 'false');
+      if (errEl) errEl.textContent = '';
+      if (formEl) {
+        var issued = formEl.querySelector('input[name=\"issued_at\"]');
+        if (issued && !issued.value) issued.value = root.dataset.issuedAt || todayISO();
+        var exp = formEl.querySelector('input[name=\"expires_at\"]');
+        if (exp && !exp.value) exp.value = root.dataset.expiresAt || '';
+        var examDate = formEl.querySelector('input[name=\"exam_date\"]');
+        if (examDate && !examDate.value) examDate.value = todayISO();
+      }
+    }
+    function closeModal(modalEl, errEl, formEl) {
+      if (!modalEl) return;
+      modalEl.classList.remove('open');
+      modalEl.setAttribute('aria-hidden', 'true');
+      if (formEl) formEl.reset();
+      if (errEl) errEl.textContent = '';
+    }
+    function bindModalClose(modalEl, errEl, formEl) {
+      if (!modalEl) return;
+      modalEl.addEventListener('click', function(e){
+        var t = e.target;
+        if (t && t.getAttribute && t.getAttribute('data-close') === '1') closeModal(modalEl, errEl, formEl);
+      });
+      document.addEventListener('keydown', function(e){
+        if (e.key === 'Escape') closeModal(modalEl, errEl, formEl);
+      });
+    }
+
+    // exam modal
+    var examModal = document.getElementById('examModal');
+    var examForm = document.getElementById('examForm');
+    var examErr = document.getElementById('examFormError');
+
+    // revoke modal
+    var revokeModal = document.getElementById('revokeModal');
+    var revokeForm = document.getElementById('revokeForm');
+    var revokeErr = document.getElementById('revokeFormError');
+
+    // edit modal (HR)
+    var editModal = document.getElementById('editModal');
+    var editForm = document.getElementById('editForm');
+    var editErr = document.getElementById('editFormError');
+    var editTopicField = document.getElementById('editTopicField');
+    var editExpiresField = document.getElementById('editExpiresField');
+    var editPerpetual = document.getElementById('isPerpetualEdit');
+
+    function syncEditPerpetual() {
+      if (!editExpiresField || !editPerpetual) return;
+      var checked = !!editPerpetual.checked;
+      editExpiresField.style.display = checked ? 'none' : 'block';
+      var expInput = editExpiresField.querySelector('input[name=\"expires_at\"]');
+      if (expInput) expInput.required = !checked;
+      if (checked && expInput) expInput.value = '';
+    }
+
+    if (editPerpetual) editPerpetual.addEventListener('change', syncEditPerpetual);
+
+    var btnExam = document.getElementById('detailExamBtn');
+    if (btnExam && canExam) {
+      btnExam.addEventListener('click', function(){
+        if (!examForm || !examModal) return;
+        examForm.querySelector('input[name=\"cert_id\"]').value = String(certId);
+        openModal(examModal, examErr, examForm);
+      });
+    }
+
+    var btnRevoke = document.getElementById('detailRevokeBtn');
+    if (btnRevoke && canHr) {
+      btnRevoke.addEventListener('click', function(){
+        if (!revokeForm || !revokeModal) return;
+        revokeForm.querySelector('input[name=\"cert_id\"]').value = String(certId);
+        openModal(revokeModal, revokeErr, revokeForm);
+      });
+    }
+
+    var btnUnrev = document.getElementById('detailUnrevokeBtn');
+    if (btnUnrev && canHr) {
+      btnUnrev.addEventListener('click', function(){
+        fetch('/api/certificates/' + encodeURIComponent(certId) + '/unrevoke', { method: 'POST', credentials: 'same-origin' })
+          .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,data:d};});})
+          .then(function(res){ if(!res.ok) throw new Error((res.data && res.data.detail) || 'Ошибка'); window.location.reload(); })
+          .catch(function(){ window.location.reload(); });
+      });
+    }
+
+    var btnEdit = document.getElementById('detailEditBtn');
+    if (btnEdit && canHr) {
+      btnEdit.addEventListener('click', function(){
+        if (!editForm || !editModal) return;
+        // prefill from dataset
+        editForm.querySelector('input[name=\"name\"]').value = root.dataset.name || '';
+        editForm.querySelector('input[name=\"issued_at\"]').value = root.dataset.issuedAt || todayISO();
+        editForm.querySelector('input[name=\"expires_at\"]').value = root.dataset.expiresAt || '';
+        if (editPerpetual) editPerpetual.checked = !(root.dataset.expiresAt || '').trim();
+        if (editTopicField) editTopicField.style.display = certType === 'internal' ? 'block' : 'none';
+        if (certType === 'internal') {
+          var sel = editForm.querySelector('select[name=\"topic\"]');
+          if (sel) sel.value = root.dataset.topic || sel.value;
+        }
+        syncEditPerpetual();
+        openModal(editModal, editErr, editForm);
+      });
+    }
+
+    // exam submit
+    if (examForm) {
+      examForm.addEventListener('submit', function(e){
+        e.preventDefault();
+        if (examErr) examErr.textContent = '';
+        var grade = examForm.querySelector('select[name=\"exam_grade\"]').value;
+        var dateVal = examForm.querySelector('input[name=\"exam_date\"]').value;
+        fetch('/api/certificates/' + encodeURIComponent(certId) + '/exam', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ exam_grade: grade, exam_date: dateVal })
+        }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,data:d};});})
+          .then(function(res){ if(!res.ok) throw new Error((res.data && res.data.detail) || 'Ошибка'); window.location.reload(); })
+          .catch(function(err){ if (examErr) examErr.textContent = err.message || 'Ошибка'; });
+      });
+    }
+
+    // revoke submit
+    if (revokeForm) {
+      revokeForm.addEventListener('submit', function(e){
+        e.preventDefault();
+        if (revokeErr) revokeErr.textContent = '';
+        var reason = revokeForm.querySelector('textarea[name=\"reason\"]').value.trim();
+        fetch('/api/certificates/' + encodeURIComponent(certId) + '/revoke', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ reason: reason })
+        }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,data:d};});})
+          .then(function(res){ if(!res.ok) throw new Error((res.data && res.data.detail) || 'Ошибка'); window.location.reload(); })
+          .catch(function(err){ if (revokeErr) revokeErr.textContent = err.message || 'Ошибка'; });
+      });
+    }
+
+    // edit submit
+    if (editForm) {
+      editForm.addEventListener('submit', function(e){
+        e.preventDefault();
+        if (editErr) editErr.textContent = '';
+        var name = editForm.querySelector('input[name=\"name\"]').value.trim();
+        var issued = editForm.querySelector('input[name=\"issued_at\"]').value.trim();
+        var isPerp = editPerpetual ? !!editPerpetual.checked : false;
+        var exp = isPerp ? '' : editForm.querySelector('input[name=\"expires_at\"]').value.trim();
+        var topic = '';
+        if (certType === 'internal') {
+          var sel = editForm.querySelector('select[name=\"topic\"]');
+          topic = sel ? sel.value : '';
+        }
+        if (!name || !issued) {
+          if (editErr) editErr.textContent = 'Заполните название и дату выдачи.';
+          return;
+        }
+        if (!isPerp && !exp) {
+          if (editErr) editErr.textContent = 'Укажите срок годности или включите бессрочность.';
+          return;
+        }
+        var payload = { name: name, issued_at: issued, expires_at: exp, is_perpetual: isPerp, topic: topic };
+        fetch('/api/certificates/' + encodeURIComponent(certId) + '/edit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(payload)
+        }).then(function(r){ return r.json().then(function(d){ return {ok:r.ok,data:d};});})
+          .then(function(res){ if(!res.ok) throw new Error((res.data && res.data.detail) || 'Ошибка'); window.location.reload(); })
+          .catch(function(err){ if (editErr) editErr.textContent = err.message || 'Ошибка'; });
+      });
+    }
+
+    bindModalClose(examModal, examErr, examForm);
+    bindModalClose(revokeModal, revokeErr, revokeForm);
+    bindModalClose(editModal, editErr, editForm);
+  }
+
   initProfileMenu();
   initCertification();
+  initCertificateDetail();
 })();

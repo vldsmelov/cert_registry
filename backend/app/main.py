@@ -39,6 +39,7 @@ from .db import (
     unrevoke_certificate,
     set_exam_result,
     upsert_user_profile,
+    update_certificate,
 )
 from .users import USERS, USERS_BY_ID, DisplayUser, get_user, group_users_for_login, make_display_user
 
@@ -222,6 +223,7 @@ def certificate_svg(cert: Dict[str, Any]) -> str:
     topic = str(cert.get("topic") or "")
     issued = str(cert.get("issued_at") or "")
     expires = str(cert.get("expires_at") or "")
+    expires_label = expires if str(expires).strip() else "Бессрочно"
 
     pal = award_palette(cert)
     accent = pal["accent"]
@@ -267,7 +269,7 @@ def certificate_svg(cert: Dict[str, Any]) -> str:
   <text x='600' y='470' text-anchor='middle' font-size='24' font-family='Inter, Arial, sans-serif'>{x(name)}</text>
   <text x='600' y='505' text-anchor='middle' font-size='18' font-family='Inter, Arial, sans-serif' fill='rgba(0,0,0,0.65)'>{x(cert_type)}{(' • ' + x(topic)) if topic else ''}</text>
 
-  <text x='600' y='575' text-anchor='middle' font-size='18' font-family='Inter, Arial, sans-serif' fill='rgba(0,0,0,0.65)'>Выдан: {x(issued)} • Действителен до: {x(expires)}</text>
+  <text x='600' y='575' text-anchor='middle' font-size='18' font-family='Inter, Arial, sans-serif' fill='rgba(0,0,0,0.65)'>Выдан: {x(issued)} • Действителен до: {x(expires_label)}</text>
 
   <g>
     <rect x='440' y='610' width='320' height='44' rx='14' fill='{x(accent_light)}' stroke='{x(accent_border)}'/>
@@ -325,7 +327,7 @@ def certificate_pdf_bytes(cert: Dict[str, Any]) -> bytes:
         ("Тип", "Внутренний" if cert.get("cert_type") == "internal" else "Внешний"),
         ("Профиль", cert.get("topic") or "—"),
         ("Дата выдачи", cert.get("issued_at") or ""),
-        ("Действителен до", cert.get("expires_at") or ""),
+        ("Действителен до", cert.get("expires_at") or "Бессрочно"),
     ]
 
     if cert.get("cert_type") != "internal":
@@ -640,12 +642,20 @@ async def certificate_page(request: Request, cert_id: int):
 
     decorate_cert(cert)
 
+    share_url = str(request.url_for("certificate_page", cert_id=int(cert_id)))
+
+    can_exam = bool(cert.get("cert_type") == "internal" and cert.get("required_examiner_id") is not None and int(cert.get("required_examiner_id")) == int(user.id) and cert.get("workflow_status") != "revoked")
+    can_hr = bool(user.role == "hr")
+
     return templates.TemplateResponse(
         "certificate_detail.html",
         {
             "request": request,
             "user": user,
             "cert": cert,
+            "share_url": share_url,
+            "can_exam": can_exam,
+            "can_hr": can_hr,
         },
     )
 
@@ -726,11 +736,21 @@ async def api_add_certificate(request: Request):
     name = str(payload.get("name", "")).strip()
     issued_at = str(payload.get("issued_at", "")).strip()
     expires_at = str(payload.get("expires_at", "")).strip()
+    is_perpetual = bool(payload.get("is_perpetual", False))
     cert_type = str(payload.get("cert_type", "external")).strip() or "external"
     topic = str(payload.get("topic", "")).strip() or None
 
-    if not name or not issued_at or not expires_at:
-        raise HTTPException(status_code=400, detail="name, issued_at, expires_at are required")
+    if not name or not issued_at:
+        raise HTTPException(status_code=400, detail="name and issued_at are required")
+
+    # По умолчанию сертификаты бессрочные.
+    # Если чекбокс выключен — expires_at обязателен.
+    if is_perpetual or not expires_at:
+        expires_at = ""
+    else:
+        expires_at = str(expires_at).strip()
+        if not expires_at:
+            raise HTTPException(status_code=400, detail="expires_at is required when not perpetual")
     if cert_type not in ("internal", "external"):
         raise HTTPException(status_code=400, detail="cert_type must be internal or external")
     if cert_type == "internal" and not topic:
@@ -969,6 +989,47 @@ async def api_unrevoke_certificate(cert_id: int, request: Request):
             cert_id=int(cert_id),
             hr_id=user.id,
             allowed_module=user.controlled_module,
+        )
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="Not allowed")
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    decorate_cert(cert)
+    return JSONResponse(cert)
+
+
+@app.post("/api/certificates/{cert_id:int}/edit")
+async def api_edit_certificate(cert_id: int, request: Request):
+    """Редактирование сертификата (для HR)."""
+    user = current_user(request)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if user.role != "hr":
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    payload: Dict[str, Any] = await request.json()
+
+    name = str(payload.get("name", "")).strip()
+    issued_at = str(payload.get("issued_at", "")).strip()
+    expires_at = str(payload.get("expires_at", "")).strip()
+    is_perpetual = bool(payload.get("is_perpetual", False))
+    topic = str(payload.get("topic", "")).strip() or None
+
+    if not name or not issued_at:
+        raise HTTPException(status_code=400, detail="name and issued_at are required")
+
+    if is_perpetual or not expires_at:
+        expires_at = ""
+
+    try:
+        cert = update_certificate(
+            cert_id=int(cert_id),
+            name=name,
+            issued_at=issued_at,
+            expires_at=expires_at,
+            topic=topic,
+            allowed_module=user.controlled_module or MODULE_CERTIFICATION,
         )
     except PermissionError:
         raise HTTPException(status_code=403, detail="Not allowed")

@@ -431,13 +431,63 @@ def unrevoke_certificate(
     return dict(row2) if row2 else cert
 
 
+
+
+def update_certificate(
+    *,
+    cert_id: int,
+    name: str,
+    issued_at: str,
+    expires_at: str,
+    topic: Optional[str],
+    allowed_module: Optional[str],
+) -> Dict[str, Any]:
+    """Редактировать сертификат (для HR).
+
+    Ограничиваем редактирование подконтрольным модулем, если он задан.
+    """
+    with _connect() as conn:
+        row = conn.execute('SELECT * FROM certificates WHERE id = ?', (int(cert_id),)).fetchone()
+        if not row:
+            raise ValueError('certificate_not_found')
+        cert = dict(row)
+
+        if allowed_module:
+            cert_module = cert.get('snapshot_module') or MODULE_CERTIFICATION
+            if cert_module != allowed_module:
+                raise PermissionError('module_mismatch')
+
+        cert_type = str(cert.get('cert_type') or 'external')
+        if cert_type != 'internal':
+            topic = None
+
+        conn.execute(
+            """
+            UPDATE certificates
+            SET name = ?, issued_at = ?, expires_at = ?, topic = ?
+            WHERE id = ?
+            """,
+            (name, issued_at, expires_at, topic, int(cert_id)),
+        )
+        row2 = conn.execute('SELECT * FROM certificates WHERE id = ?', (int(cert_id),)).fetchone()
+        conn.commit()
+    return dict(row2) if row2 else cert
+
+
 def compute_status(expires_at: str) -> Tuple[str, str]:
-    """Возвращает (status_code, label) на основе даты окончания."""
+    """Возвращает (status_code, label) на основе даты окончания.
+
+    Пустая дата окончания = сертификат бессрочный (считаем действительным).
+    """
+    expires_at = str(expires_at or '').strip()
+    if not expires_at:
+        return 'valid', 'Действителен'
+
     try:
-        y, m, d = [int(x) for x in expires_at.split("-")]
+        y, m, d = [int(x) for x in expires_at.split('-')]
         exp = date(y, m, d)
         if exp >= date.today():
-            return "valid", "Действителен"
-        return "expired", "Просрочен"
+            return 'valid', 'Действителен'
+        return 'expired', 'Просрочен'
     except Exception:
-        return "unknown", "Неизвестно"
+        return 'unknown', 'Неизвестно'
