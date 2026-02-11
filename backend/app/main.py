@@ -40,6 +40,7 @@ from .db import (
     set_exam_result,
     upsert_user_profile,
     update_certificate,
+    delete_certificate,
 )
 from .users import USERS, USERS_BY_ID, DisplayUser, get_user, group_users_for_login, make_display_user
 
@@ -1038,3 +1039,25 @@ async def api_edit_certificate(cert_id: int, request: Request):
 
     decorate_cert(cert)
     return JSONResponse(cert)
+
+
+@app.delete("/api/certificates/{cert_id:int}")
+async def api_delete_certificate(cert_id: int, request: Request):
+    """Удаление сертификата (для курирующего HR)."""
+    user = current_user(request)
+    if user is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if user.role != "hr":
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    try:
+        delete_certificate(
+            cert_id=int(cert_id),
+            allowed_module=user.controlled_module or MODULE_CERTIFICATION,
+        )
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="Not allowed")
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    return JSONResponse({"ok": True})

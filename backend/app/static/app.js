@@ -1091,6 +1091,33 @@
     }
 
 
+
+
+    function postDelete(certId, btnEl, onDone) {
+      if (!certId) return;
+      if (btnEl) {
+        btnEl.disabled = true;
+        btnEl.classList.add('is-loading');
+      }
+      fetch('/api/certificates/' + encodeURIComponent(certId), {
+        method: 'DELETE',
+        credentials: 'same-origin'
+      })
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+        .then(function (res) {
+          if (!res.ok) {
+            var msg = (res.data && (res.data.detail || res.data.message)) || 'Ошибка';
+            throw new Error(msg);
+          }
+          if (typeof onDone === 'function') return onDone();
+          loadAll();
+        })
+        .catch(function () {
+          if (typeof onDone === 'function') return onDone();
+          loadAll();
+        });
+    }
+
     function renderTeam() {
       if (!teamTableBody) return;
 
@@ -1249,6 +1276,18 @@
             });
             tdAct.appendChild(btnRev);
           }
+
+          var btnDel = el('button', 'btn btn--xs btn--danger', 'Удалить');
+          btnDel.type = 'button';
+          btnDel.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (!confirm('Удалить сертификат №' + c.id + '? Операция необратима.')) return;
+            var txt = prompt('Введите УДАЛИТЬ для подтверждения удаления:', '');
+            if ((txt || '').trim() !== 'УДАЛИТЬ') return;
+            postDelete(c.id, btnDel);
+          });
+          tdAct.appendChild(btnDel);
+
         } else {
           tdAct.appendChild(el('span', 'cell-muted', ''));
         }
@@ -1692,6 +1731,30 @@
         openModal(editModal, editErr, editForm);
       });
     }
+
+    var btnDel = document.getElementById('detailDeleteBtn');
+    if (btnDel && canHr) {
+      btnDel.addEventListener('click', function () {
+        if (!confirm('Удалить сертификат №' + certId + '? Операция необратима.')) return;
+        var txt = prompt('Введите УДАЛИТЬ для подтверждения удаления:', '');
+        if ((txt || '').trim() !== 'УДАЛИТЬ') return;
+        btnDel.disabled = true;
+        btnDel.classList.add('is-loading');
+        fetch('/api/certificates/' + encodeURIComponent(certId), {
+          method: 'DELETE',
+          credentials: 'same-origin'
+        })
+          .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+          .then(function (res) {
+            if (!res.ok) throw new Error((res.data && res.data.detail) || 'Ошибка');
+            window.location.href = '/certification';
+          })
+          .catch(function () {
+            window.location.href = '/certification';
+          });
+      });
+    }
+
 
     // exam submit
     if (examForm) {

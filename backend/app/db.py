@@ -474,6 +474,27 @@ def update_certificate(
     return dict(row2) if row2 else cert
 
 
+def delete_certificate(*, cert_id: int, allowed_module: Optional[str]) -> None:
+    """Удалить сертификат (для HR).
+
+    Ограничиваем удаление подконтрольным модулем, если он задан.
+    Удаление необратимо (для прототипа делаем физическое удаление).
+    """
+    with _connect() as conn:
+        row = conn.execute("SELECT * FROM certificates WHERE id = ?", (int(cert_id),)).fetchone()
+        if not row:
+            raise ValueError("certificate_not_found")
+        cert = dict(row)
+
+        if allowed_module:
+            cert_module = cert.get("snapshot_module") or MODULE_CERTIFICATION
+            if cert_module != allowed_module:
+                raise PermissionError("module_mismatch")
+
+        conn.execute("DELETE FROM certificates WHERE id = ?", (int(cert_id),))
+        conn.commit()
+
+
 def compute_status(expires_at: str) -> Tuple[str, str]:
     """Возвращает (status_code, label) на основе даты окончания.
 
