@@ -1879,3 +1879,103 @@ body {
 .btn.is-loading, .grade-btn.is-loading {
     opacity: 0.7;
 }
+
+/* ------------------------------
+   Мои сертификаты — фильтры
+------------------------------ */
+.my-toolbar {
+    margin: 0 12px 12px;
+    padding: 12px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.my-filters {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+    min-width: 260px;
+}
+
+.my-filter-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.my-filter-label {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.6);
+    font-weight: 700;
+}
+
+.filter-pill {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.filter-pill input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.filter-pill span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, 0.10);
+    background: rgba(0, 0, 0, 0.02);
+    color: rgba(0, 0, 0, 0.78);
+    font-size: 12px;
+    user-select: none;
+}
+
+.filter-pill input:checked + span {
+    background: rgba(33, 87, 255, 0.12);
+    border-color: rgba(33, 87, 255, 0.18);
+    color: #2157ff;
+}
+
+.filter-pill input:focus + span {
+    outline: 2px solid rgba(33, 87, 255, 0.25);
+    outline-offset: 2px;
+}
+
+.my-stats {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.stat-pill {
+    padding: 8px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(0, 0, 0, 0.10);
+    background: rgba(0, 0, 0, 0.02);
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.78);
+}
+
+.stat-pill strong {
+    font-weight: 800;
+}
+
+.stat-pill--primary {
+    background: rgba(33, 87, 255, 0.10);
+    border-color: rgba(33, 87, 255, 0.18);
+    color: rgba(0, 0, 0, 0.86);
+}

@@ -93,14 +93,41 @@
 
             <!-- Мои сертификаты -->
             <div class="tab-panel tab-panel--active" id="tab-my" data-tabpanel="my">
+                <div class="my-toolbar" id="myFiltersBar">
+                    <div class="my-filters">
+                        <div class="my-filter-group">
+                            <div class="my-filter-label">Тип</div>
+                            <div class="my-filter-pills">
+                                <label class="filter-pill"><input type="checkbox" id="myShowInternal" checked><span>Внутренние</span></label>
+                                <label class="filter-pill"><input type="checkbox" id="myShowExternal" checked><span>Внешние</span></label>
+                            </div>
+                        </div>
+                        <div class="my-filter-group">
+                            <div class="my-filter-label">Статус</div>
+                            <div class="my-filter-pills">
+                                <label class="filter-pill"><input type="checkbox" id="myShowValid" checked><span>Действительны</span></label>
+                                <label class="filter-pill"><input type="checkbox" id="myShowPassed" checked><span>Экзамен сдан</span></label>
+                                <label class="filter-pill"><input type="checkbox" id="myShowPending" checked><span>Ожидают экзамен</span></label>
+                                <label class="filter-pill"><input type="checkbox" id="myShowFailed" checked><span>Экзамен не сдан</span></label>
+                                <label class="filter-pill"><input type="checkbox" id="myShowExpired" checked><span>Просрочены</span></label>
+                                <label class="filter-pill"><input type="checkbox" id="myShowRevoked" checked><span>Отозваны</span></label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="my-stats" aria-label="Сводка по сертификатам">
+                        <div class="stat-pill">Показано: <strong id="myShownCount">0</strong></div>
+                        <div class="stat-pill stat-pill--primary">Действительны: <strong id="myValidCount">0</strong></div>
+                    </div>
+                </div>
+
                 <div class="cert-empty" id="certEmpty" style="display:none;">Пока нет сертификатов. Нажмите “+ Добавить сертификат”, чтобы добавить.</div>
-                <div class="section">
+                <div class="section" id="myInternalSection">
                     <h2 class="section-title">Внутренние сертификаты</h2>
                     <div class="cert-empty" id="myInternalEmpty" style="display:none;">Нет внутренних сертификатов.</div>
                     <section class="cert-grid cert-grid--my" id="myInternalList"></section>
                 </div>
 
-                <div class="section">
+                <div class="section" id="myExternalSection">
                     <h2 class="section-title">Внешние сертификаты</h2>
                     <div class="cert-empty" id="myExternalEmpty" style="display:none;">Нет внешних сертификатов.</div>
                     <section class="cert-grid cert-grid--my" id="myExternalList"></section>

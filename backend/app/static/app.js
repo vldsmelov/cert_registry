@@ -73,6 +73,19 @@
     var myEmpty = document.getElementById('certEmpty');
     var myInternalEmpty = document.getElementById('myInternalEmpty');
     var myExternalEmpty = document.getElementById('myExternalEmpty');
+    var myInternalSection = document.getElementById('myInternalSection');
+    var myExternalSection = document.getElementById('myExternalSection');
+    var myShownCountEl = document.getElementById('myShownCount');
+    var myValidCountEl = document.getElementById('myValidCount');
+    var myShowInternal = document.getElementById('myShowInternal');
+    var myShowExternal = document.getElementById('myShowExternal');
+    var myShowValid = document.getElementById('myShowValid');
+    var myShowPending = document.getElementById('myShowPending');
+    var myShowPassed = document.getElementById('myShowPassed');
+    var myShowFailed = document.getElementById('myShowFailed');
+    var myShowRevoked = document.getElementById('myShowRevoked');
+    var myShowExpired = document.getElementById('myShowExpired');
+
     var reqList = document.getElementById('reqList');
     var reqEmpty = document.getElementById('reqEmpty');
 
@@ -120,6 +133,7 @@
     var revokeTargetHint = document.getElementById('revokeTargetHint');
 
     var cachedMe = null;
+    var myAll = [];
     var teamAll = [];
     var teamCanRevoke = false;
     var teamScopeText = '';
@@ -438,13 +452,135 @@
       if (listEl) listEl.innerHTML = '';
     }
 
+    function readMyFilters() {
+      function safeChecked(el, def) { return el ? !!el.checked : def; }
+      var defAll = {
+        showInternal: true,
+        showExternal: true,
+        showValid: true,
+        showPending: true,
+        showPassed: true,
+        showFailed: true,
+        showRevoked: true,
+        showExpired: true
+      };
+      try {
+        var raw = localStorage.getItem('my_cert_filters_v1');
+        if (!raw) return defAll;
+        var parsed = JSON.parse(raw);
+        return {
+          showInternal: parsed.showInternal !== undefined ? !!parsed.showInternal : defAll.showInternal,
+          showExternal: parsed.showExternal !== undefined ? !!parsed.showExternal : defAll.showExternal,
+          showValid: parsed.showValid !== undefined ? !!parsed.showValid : defAll.showValid,
+          showPending: parsed.showPending !== undefined ? !!parsed.showPending : defAll.showPending,
+          showPassed: parsed.showPassed !== undefined ? !!parsed.showPassed : defAll.showPassed,
+          showFailed: parsed.showFailed !== undefined ? !!parsed.showFailed : defAll.showFailed,
+          showRevoked: parsed.showRevoked !== undefined ? !!parsed.showRevoked : defAll.showRevoked,
+          showExpired: parsed.showExpired !== undefined ? !!parsed.showExpired : defAll.showExpired
+        };
+      } catch (e) {
+        return {
+          showInternal: safeChecked(myShowInternal, true),
+          showExternal: safeChecked(myShowExternal, true),
+          showValid: safeChecked(myShowValid, true),
+          showPending: safeChecked(myShowPending, true),
+          showPassed: safeChecked(myShowPassed, true),
+          showFailed: safeChecked(myShowFailed, true),
+          showRevoked: safeChecked(myShowRevoked, true),
+          showExpired: safeChecked(myShowExpired, true)
+        };
+      }
+    }
+
+    function applyMyFilters(all) {
+      var f = readMyFilters();
+      return (all || []).filter(function (c) {
+        // type
+        if (c.cert_type === 'internal') {
+          if (!f.showInternal) return false;
+        } else {
+          if (!f.showExternal) return false;
+        }
+        // status-group
+        var g = groupLabelAndKey(c).key;
+        if (g === 'valid' && !f.showValid) return false;
+        if (g === 'pending_exam' && !f.showPending) return false;
+        if (g === 'passed' && !f.showPassed) return false;
+        if (g === 'failed' && !f.showFailed) return false;
+        if (g === 'revoked' && !f.showRevoked) return false;
+        if (g === 'expired' && !f.showExpired) return false;
+        return true;
+      });
+    }
+
+    function isTrulyValid(cert) {
+      if (!cert) return false;
+      if (cert.workflow_status === 'revoked') return false;
+      if (cert.status === 'expired') return false;
+      if (cert.cert_type === 'internal') return cert.workflow_status === 'passed';
+      return true;
+    }
+
+    function syncMyFilterUIFromStorage() {
+      var f = readMyFilters();
+      if (myShowInternal) myShowInternal.checked = !!f.showInternal;
+      if (myShowExternal) myShowExternal.checked = !!f.showExternal;
+      if (myShowValid) myShowValid.checked = !!f.showValid;
+      if (myShowPending) myShowPending.checked = !!f.showPending;
+      if (myShowPassed) myShowPassed.checked = !!f.showPassed;
+      if (myShowFailed) myShowFailed.checked = !!f.showFailed;
+      if (myShowRevoked) myShowRevoked.checked = !!f.showRevoked;
+      if (myShowExpired) myShowExpired.checked = !!f.showExpired;
+    }
+
+    function saveMyFilters() {
+      var f = {
+        showInternal: myShowInternal ? !!myShowInternal.checked : true,
+        showExternal: myShowExternal ? !!myShowExternal.checked : true,
+        showValid: myShowValid ? !!myShowValid.checked : true,
+        showPending: myShowPending ? !!myShowPending.checked : true,
+        showPassed: myShowPassed ? !!myShowPassed.checked : true,
+        showFailed: myShowFailed ? !!myShowFailed.checked : true,
+        showRevoked: myShowRevoked ? !!myShowRevoked.checked : true,
+        showExpired: myShowExpired ? !!myShowExpired.checked : true
+      };
+      try { localStorage.setItem('my_cert_filters_v1', JSON.stringify(f)); } catch (e) {}
+    }
+
     function renderMy(items) {
       var all = items || [];
 
+      // когда сертификатов нет совсем
       if (!all.length) {
         if (myEmpty) {
           myEmpty.style.display = 'block';
           myEmpty.textContent = 'Пока нет сертификатов. Нажмите “+ Добавить сертификат”, чтобы добавить.';
+        }
+        if (myInternalSection) myInternalSection.style.display = 'none';
+        if (myExternalSection) myExternalSection.style.display = 'none';
+        if (myInternalEmpty) myInternalEmpty.style.display = 'none';
+        if (myExternalEmpty) myExternalEmpty.style.display = 'none';
+        clearList(myInternalList);
+        clearList(myExternalList);
+        if (myShownCountEl) myShownCountEl.textContent = '0';
+        if (myValidCountEl) myValidCountEl.textContent = '0';
+        return;
+      }
+
+      // фильтры
+      var filtered = applyMyFilters(all);
+      var shown = filtered.length;
+      var valid = filtered.filter(isTrulyValid).length;
+      if (myShownCountEl) myShownCountEl.textContent = String(shown);
+      if (myValidCountEl) myValidCountEl.textContent = String(valid);
+
+      // если фильтры скрыли всё
+      if (!filtered.length) {
+        if (myInternalSection) myInternalSection.style.display = 'none';
+        if (myExternalSection) myExternalSection.style.display = 'none';
+        if (myEmpty) {
+          myEmpty.style.display = 'block';
+          myEmpty.textContent = 'Нет сертификатов по выбранным фильтрам.';
         }
         if (myInternalEmpty) myInternalEmpty.style.display = 'none';
         if (myExternalEmpty) myExternalEmpty.style.display = 'none';
@@ -455,11 +591,30 @@
 
       if (myEmpty) myEmpty.style.display = 'none';
 
-      var internal = all.filter(function (c) { return c.cert_type === 'internal'; });
-      var external = all.filter(function (c) { return c.cert_type !== 'internal'; });
+      var showInternal = myShowInternal ? !!myShowInternal.checked : true;
+      var showExternal = myShowExternal ? !!myShowExternal.checked : true;
 
-      renderGrouped(myInternalList, myInternalEmpty, internal, { emptyText: 'Нет внутренних сертификатов.', preview: true });
-      renderGrouped(myExternalList, myExternalEmpty, external, { emptyText: 'Нет внешних сертификатов.', preview: true });
+      // разделение по типам
+      var internal = filtered.filter(function (c) { return c.cert_type === 'internal'; });
+      var external = filtered.filter(function (c) { return c.cert_type !== 'internal'; });
+
+      // секции (тип)
+      if (myInternalSection) myInternalSection.style.display = showInternal ? 'block' : 'none';
+      if (myExternalSection) myExternalSection.style.display = showExternal ? 'block' : 'none';
+
+      if (showInternal) {
+        renderGrouped(myInternalList, myInternalEmpty, internal, { emptyText: 'Нет внутренних сертификатов по выбранным фильтрам.', preview: true });
+      } else {
+        if (myInternalEmpty) myInternalEmpty.style.display = 'none';
+        clearList(myInternalList);
+      }
+
+      if (showExternal) {
+        renderGrouped(myExternalList, myExternalEmpty, external, { emptyText: 'Нет внешних сертификатов по выбранным фильтрам.', preview: true });
+      } else {
+        if (myExternalEmpty) myExternalEmpty.style.display = 'none';
+        clearList(myExternalList);
+      }
     }
 
     function renderRequests(items) {
@@ -1106,9 +1261,9 @@
     function loadMy() {
       return fetch('/api/certificates', { credentials: 'same-origin' })
         .then(function (r) { if (!r.ok) throw new Error(); return r.json(); })
-        .then(function (data) { renderMy((data && data.items) || []); })
+        .then(function (data) { myAll = (data && data.items) || []; renderMy(myAll); })
         .catch(function () {
-          renderMy([]);
+          myAll = []; renderMy([]);
           if (myEmpty) {
             myEmpty.style.display = 'block';
             myEmpty.textContent = 'Не удалось загрузить список сертификатов.';
@@ -1219,6 +1374,16 @@
       b.addEventListener('click', function () {
         var key = b.getAttribute('data-tab');
         setActiveTab(key);
+      });
+    });
+
+    // restore filters for "Мои сертификаты"
+    syncMyFilterUIFromStorage();
+    var myFilterInputs = [myShowInternal, myShowExternal, myShowValid, myShowPending, myShowPassed, myShowFailed, myShowRevoked, myShowExpired].filter(Boolean);
+    myFilterInputs.forEach(function (inp) {
+      inp.addEventListener('change', function () {
+        saveMyFilters();
+        renderMy(myAll);
       });
     });
 
