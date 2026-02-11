@@ -33,7 +33,7 @@ def _ensure_column(conn: sqlite3.Connection, table: str, col: str, ddl: str) -> 
 
 
 def init_db() -> None:
-    """Создаёт БД и выполняет простую миграцию схемы (прототип)."""
+    """Создаёт БД и выполняет простую миграцию схемы."""
     with _connect() as conn:
         # --- certificates ---
         conn.execute(
@@ -49,7 +49,7 @@ def init_db() -> None:
             """
         )
 
-        # Новые поля (эволюция прототипа)
+        # Новые поля (эволюция схемы)
         _ensure_column(conn, "certificates", "cert_type", "TEXT NOT NULL DEFAULT 'external'")
         _ensure_column(conn, "certificates", "topic", "TEXT")
         _ensure_column(conn, "certificates", "workflow_status", "TEXT NOT NULL DEFAULT 'active'")
@@ -378,13 +378,137 @@ def revoke_certificate(
     return dict(row2) if row2 else cert
 
 
+def unrevoke_certificate(
+    *,
+    cert_id: int,
+    hr_id: int,
+    allowed_module: Optional[str],
+) -> Dict[str, Any]:
+    """Снять отзыв сертификата (только HR).
+
+    В прототипе восстанавливаем статус по данным сертификата:
+    - internal: если есть exam_grade -> passed/failed; иначе pending_exam
+    - external: active
+    """
+    with _connect() as conn:
+        row = conn.execute("SELECT * FROM certificates WHERE id = ?", (int(cert_id),)).fetchone()
+        if not row:
+            raise ValueError("certificate_not_found")
+        cert = dict(row)
+
+        if cert.get("workflow_status") != 'revoked':
+            # нечего снимать — просто возвращаем
+            return cert
+
+        # Ограничение по подконтрольному модулю (если задано)
+        if allowed_module:
+            cert_module = cert.get("snapshot_module") or MODULE_CERTIFICATION
+            if cert_module != allowed_module:
+                raise PermissionError("module_mismatch")
+
+        new_status = 'active'
+        if str(cert.get('cert_type') or '') == 'internal':
+            if cert.get('exam_grade'):
+                new_status = 'failed' if str(cert.get('exam_grade')) == 'Не сдан' else 'passed'
+            else:
+                # если есть экзаменатор — значит ожидание экзамена
+                new_status = 'pending_exam' if cert.get('required_examiner_id') else 'active'
+
+        conn.execute(
+            """
+            UPDATE certificates
+            SET workflow_status = ?,
+                revoked_by_id = NULL,
+                revoked_by_name = NULL,
+                revoked_reason = NULL,
+                revoked_at = NULL
+            WHERE id = ?
+            """,
+            (new_status, int(cert_id)),
+        )
+        row2 = conn.execute("SELECT * FROM certificates WHERE id = ?", (int(cert_id),)).fetchone()
+        conn.commit()
+    return dict(row2) if row2 else cert
+
+
+
+
+def update_certificate(
+    *,
+    cert_id: int,
+    name: str,
+    issued_at: str,
+    expires_at: str,
+    topic: Optional[str],
+    allowed_module: Optional[str],
+) -> Dict[str, Any]:
+    """Редактировать сертификат (для HR).
+
+    Ограничиваем редактирование подконтрольным модулем, если он задан.
+    """
+    with _connect() as conn:
+        row = conn.execute('SELECT * FROM certificates WHERE id = ?', (int(cert_id),)).fetchone()
+        if not row:
+            raise ValueError('certificate_not_found')
+        cert = dict(row)
+
+        if allowed_module:
+            cert_module = cert.get('snapshot_module') or MODULE_CERTIFICATION
+            if cert_module != allowed_module:
+                raise PermissionError('module_mismatch')
+
+        cert_type = str(cert.get('cert_type') or 'external')
+        if cert_type != 'internal':
+            topic = None
+
+        conn.execute(
+            """
+            UPDATE certificates
+            SET name = ?, issued_at = ?, expires_at = ?, topic = ?
+            WHERE id = ?
+            """,
+            (name, issued_at, expires_at, topic, int(cert_id)),
+        )
+        row2 = conn.execute('SELECT * FROM certificates WHERE id = ?', (int(cert_id),)).fetchone()
+        conn.commit()
+    return dict(row2) if row2 else cert
+
+
+def delete_certificate(*, cert_id: int, allowed_module: Optional[str]) -> None:
+    """Удалить сертификат (для HR).
+
+    Ограничиваем удаление подконтрольным модулем, если он задан.
+    Удаление необратимо (для прототипа делаем физическое удаление).
+    """
+    with _connect() as conn:
+        row = conn.execute("SELECT * FROM certificates WHERE id = ?", (int(cert_id),)).fetchone()
+        if not row:
+            raise ValueError("certificate_not_found")
+        cert = dict(row)
+
+        if allowed_module:
+            cert_module = cert.get("snapshot_module") or MODULE_CERTIFICATION
+            if cert_module != allowed_module:
+                raise PermissionError("module_mismatch")
+
+        conn.execute("DELETE FROM certificates WHERE id = ?", (int(cert_id),))
+        conn.commit()
+
+
 def compute_status(expires_at: str) -> Tuple[str, str]:
-    """Возвращает (status_code, label) на основе даты окончания."""
+    """Возвращает (status_code, label) на основе даты окончания.
+
+    Пустая дата окончания = сертификат бессрочный (считаем действительным).
+    """
+    expires_at = str(expires_at or '').strip()
+    if not expires_at:
+        return 'valid', 'Действителен'
+
     try:
-        y, m, d = [int(x) for x in expires_at.split("-")]
+        y, m, d = [int(x) for x in expires_at.split('-')]
         exp = date(y, m, d)
         if exp >= date.today():
-            return "valid", "Действителен"
-        return "expired", "Просрочен"
+            return 'valid', 'Действителен'
+        return 'expired', 'Просрочен'
     except Exception:
-        return "unknown", "Неизвестно"
+        return 'unknown', 'Неизвестно'
