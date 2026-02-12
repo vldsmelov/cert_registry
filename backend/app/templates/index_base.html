@@ -12,6 +12,47 @@
 </head>
 
 <body>
+    <header class="bx-topbar" aria-label="Панель Bitrix24">
+        <div class="bx-left">
+            <button class="bx-burger" type="button" aria-label="Меню">☰</button>
+            <a class="bx-brand" href="/">Битрикс<span class="bx-brand-24">24</span></a>
+        </div>
+
+        <div class="bx-search" role="search">
+            <span class="bx-search-icon">🔍</span>
+            <input class="bx-search-input" type="text" placeholder="искать сотрудника, документ..." />
+        </div>
+
+        <div class="bx-center">
+            <button class="bx-chat" type="button" aria-label="Чаты"><span>💬</span><span>Чаты</span></button>
+            <div class="bx-clock" data-bx-clock>12:53</div>
+        </div>
+
+        <div class="bx-right">
+            <div class="bx-work">РАБОТАЮ</div>
+            <button class="bx-btn bx-btn--ghost" type="button">Купить тариф</button>
+            <button class="bx-btn bx-btn--primary" type="button">Пригласить +</button>
+
+            <div class="profile">
+                <button class="bx-user-btn" id="profileBtn" type="button" aria-haspopup="menu" aria-expanded="false">
+                    <span class="bx-user-name">{{ user.full_name }}</span>
+                    <span class="bx-user-avatar">{{ user.initials }}</span>
+                </button>
+                <div class="profile-menu" id="profileMenu" role="menu" aria-label="Меню профиля">
+                    <div class="profile-menu-header">
+                        <div class="avatar avatar--sm">{{ user.initials }}</div>
+                        <div class="profile-menu-meta">
+                            <div class="profile-menu-name">{{ user.full_name }}</div>
+                            <div class="profile-menu-role">{{ user.role_label }}</div>
+                        </div>
+                    </div>
+                    <a class="profile-menu-item" href="/profile">Профиль</a>
+                    <a class="profile-menu-item" href="/logout">Выйти</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
     <div class="app">
         <aside class="sidebar">
             <div class="logo">
@@ -40,44 +81,6 @@
         </aside>
 
         <main class="content">
-            <header class="topbar">
-                <div class="top-links">
-                    <a href="#">Все новости</a>
-                    <a href="#">Компания</a>
-                    <a href="#">Строительство</a>
-                    <a href="#">Логистика</a>
-                    <a href="#">Спорт</a>
-                    <a href="#">Медицина</a>
-                    <a href="#">Наша жизнь</a>
-                    <a href="#">Заметки лидера</a>
-                    <a href="#">Еще</a>
-                </div>
-                <div class="top-actions">
-                    <span>🔍</span>
-                    <div class="logo">
-                        <span class="logo-icon">A</span>
-                        <span>Компания</span>
-                    </div>
-                    <button class="btn">Помощь</button>
-                    <div class="profile">
-                        <button class="avatar-btn" id="profileBtn" type="button" aria-haspopup="menu" aria-expanded="false">
-                            <div class="avatar">{{ user.initials }}</div>
-                        </button>
-                        <div class="profile-menu" id="profileMenu" role="menu" aria-label="Меню профиля">
-                            <div class="profile-menu-header">
-                                <div class="avatar avatar--sm">{{ user.initials }}</div>
-                                <div class="profile-menu-meta">
-                                    <div class="profile-menu-name">{{ user.full_name }}</div>
-                                    <div class="profile-menu-role">{{ user.role_label }}</div>
-                                </div>
-                            </div>
-                            <a class="profile-menu-item" href="/profile">Профиль</a>
-                            <a class="profile-menu-item" href="/logout">Выйти</a>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
             <div class="feed-header">
                 <div class="header-stack">
                     <h1>Сертификация</h1>
@@ -268,9 +271,9 @@
                             <label class="form-field">
                                 <span>Оценка</span>
                                 <select name="exam_grade" required>
-                                    <option value="Золото">Золото</option>
-                                    <option value="Серебро">Серебро</option>
-                                    <option value="Бронза">Бронза</option>
+                                    <option value="Hard">Hard</option>
+                                    <option value="Standart">Standart</option>
+                                    <option value="Light">Light</option>
                                     <option value="Не сдан">Не сдан</option>
                                 </select>
                             </label>

@@ -119,7 +119,12 @@ def can_view_certificate(user: DisplayUser, cert: Dict[str, Any]) -> bool:
 
 
 def normalize_award(grade: Any) -> str | None:
-    """Нормализует оценку/шаблон к одному из: gold/silver/bronze."""
+    """Нормализует оценку/шаблон к одному из: gold/silver/bronze.
+
+    В UI уровни называются: Light | Standart | Hard.
+    Внутри оставляем стабильные коды (gold/silver/bronze) и поддерживаем
+    совместимость со старыми значениями.
+    """
     g = str(grade or "").strip().lower()
     if not g:
         return None
@@ -131,12 +136,12 @@ def normalize_award(grade: Any) -> str | None:
     if g in ("3", "3.0", "2", "2.0"):
         return "bronze"
 
-    # русские/англ варианты
-    if "зол" in g or g == "gold":
+    # русские/англ варианты + новые уровни
+    if "зол" in g or g == "gold" or "hard" in g:
         return "gold"
-    if "сереб" in g or g == "silver":
+    if "сереб" in g or g == "silver" or g in ("standart", "standard") or "standart" in g or "standard" in g:
         return "silver"
-    if "брон" in g or g == "bronze":
+    if "брон" in g or g == "bronze" or "light" in g:
         return "bronze"
     return None
 
@@ -144,11 +149,11 @@ def normalize_award(grade: Any) -> str | None:
 def award_label(grade: Any) -> str | None:
     a = normalize_award(grade)
     if a == "gold":
-        return "Золото"
+        return "Hard"
     if a == "silver":
-        return "Серебро"
+        return "Standart"
     if a == "bronze":
-        return "Бронза"
+        return "Light"
     return None
 
 
@@ -239,7 +244,7 @@ def certificate_svg(cert: Dict[str, Any]) -> str:
     elif cert.get("cert_type") == "internal" and cert.get("workflow_status") == "pending_exam":
         extra = f"Экзаменатор: {cert.get('required_examiner_name') or '—'}"
     elif cert.get("cert_type") == "internal" and cert.get("workflow_status") == "passed":
-        g = cert.get("exam_grade") or "—"
+        g = award_label(cert.get("exam_grade")) or cert.get("exam_grade") or "—"
         d = cert.get("exam_date") or ""
         extra = f"Экзамен: {g} {('(' + d + ')') if d else ''}"
     elif cert.get("cert_type") == "internal" and cert.get("workflow_status") == "failed":
@@ -373,7 +378,7 @@ def certificate_pdf_bytes(cert: Dict[str, Any]) -> bytes:
         c.setFont(font_bold, 12)
         c.drawString(70, y, "Экзамен:")
         c.setFont(font, 12)
-        grade = cert.get("exam_grade") or "—"
+        grade = award_label(cert.get("exam_grade")) or cert.get("exam_grade") or "—"
         dt = cert.get("exam_date") or ""
         c.drawString(190, y, f"Оценка {grade} {('(' + dt + ')') if dt else ''}")
         y -= 18
@@ -420,6 +425,11 @@ def decorate_cert(item: Dict[str, Any]) -> Dict[str, Any]:
             item["status"] = "invalid"
             item["status_label"] = "Недействителен"
             return item
+
+    # Приводим отображаемую оценку к текущим уровням (Light/Standart/Hard)
+    # для корректного UI и PDF/SVG, даже если в базе остались старые значения.
+    if item.get("workflow_status") == "passed" and item.get("exam_grade") and item.get("exam_grade") != "Не сдан":
+        item["exam_grade"] = award_label(item.get("exam_grade")) or item.get("exam_grade")
 
     status, label = compute_status(str(item.get("expires_at", "")))
     item["status"] = status
@@ -887,18 +897,18 @@ async def api_set_exam_result(cert_id: int, request: Request):
     grade = str(payload.get("exam_grade", "")).strip()
     exam_date = str(payload.get("exam_date", "")).strip()
 
-    # нормализуем оценки под 3 шаблона: Золото/Серебро/Бронза
+    # нормализуем оценки под уровни: Light / Standart / Hard
     # + отдельное значение "Не сдан"
     raw = grade
     grade = award_label(grade) or grade
     if str(raw).strip().lower() in {"не сдан", "не сдал", "не сдано"}:
         grade = "Не сдан"
-    allowed_grades = {"Золото", "Серебро", "Бронза", "Не сдан"}
+    allowed_grades = {"Hard", "Standart", "Light", "Не сдан"}
 
     if not grade or not exam_date:
         raise HTTPException(status_code=400, detail="exam_grade and exam_date are required")
     if grade not in allowed_grades:
-        raise HTTPException(status_code=400, detail="exam_grade must be one of: Золото, Серебро, Бронза, Не сдан")
+        raise HTTPException(status_code=400, detail="exam_grade must be one of: Hard, Standart, Light, Не сдан")
 
     try:
         wf = "failed" if grade == "Не сдан" else "passed"

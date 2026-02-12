@@ -28,6 +28,21 @@
     });
   }
 
+  function initBitrixHeader() {
+    var clocks = document.querySelectorAll('[data-bx-clock]');
+    if (!clocks || clocks.length === 0) return;
+
+    function pad2(n) { return (n < 10 ? '0' : '') + n; }
+    function tick() {
+      var d = new Date();
+      var t = pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+      clocks.forEach(function(el){ el.textContent = t; });
+    }
+
+    tick();
+    window.setInterval(tick, 15000);
+  }
+
   function el(tag, cls, text) {
     var node = document.createElement(tag);
     if (cls) node.className = cls;
@@ -1233,10 +1248,11 @@
         var canQuick = (c.cert_type === 'internal' && c.workflow_status === 'pending_exam' && isCurrentExaminer(c));
         if (canQuick) {
           var wrap = el('div', 'quick-grade');
-          ['Золото', 'Серебро', 'Бронза', 'Не сдан'].forEach(function (g) {
+          ['Hard', 'Standart', 'Light', 'Не сдан'].forEach(function (g) {
             var btn = el('button', 'grade-btn', g);
             btn.type = 'button';
-            btn.classList.add(g === 'Золото' ? 'grade-btn--gold' : g === 'Серебро' ? 'grade-btn--silver' : g === 'Бронза' ? 'grade-btn--bronze' : 'grade-btn--fail');
+            // сохраняем существующие цветовые классы кнопок
+            btn.classList.add(g === 'Hard' ? 'grade-btn--gold' : g === 'Standart' ? 'grade-btn--silver' : g === 'Light' ? 'grade-btn--bronze' : 'grade-btn--fail');
             btn.addEventListener('click', function (e) {
               e.stopPropagation();
               postQuickExam(c.id, g, btn);
@@ -1831,6 +1847,7 @@
   }
 
   initProfileMenu();
+  initBitrixHeader();
   initCertification();
   initCertificateDetail();
 })();
