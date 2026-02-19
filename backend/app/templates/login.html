@@ -1,74 +1,36 @@
-<!DOCTYPE html>
-<html lang="ru">
+{% extends "layout_public.html" %}
 
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Вход — Реестр сертификатов</title>
-    <link rel="stylesheet" href="/static/style.css" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-</head>
+{% block title %}Вход — А-Компания{% endblock %}
 
-<body>
-    <header class="bx-topbar bx-topbar--standalone" aria-label="Панель Bitrix24">
-        <div class="bx-left">
-            <button class="bx-burger" type="button" aria-label="Меню">☰</button>
-            <a class="bx-brand" href="/">Битрикс<span class="bx-brand-24">24</span></a>
+{% block content %}
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-title">
+            <h1>Выберите пользователя</h1>
+            <p>Для демонстрации системы выберите тестового пользователя.</p>
         </div>
 
-        <div class="bx-search" role="search">
-            <span class="bx-search-icon">🔍</span>
-            <input class="bx-search-input" type="text" placeholder="искать сотрудника, документ..." />
-        </div>
-
-        <div class="bx-center">
-            <button class="bx-chat" type="button" aria-label="Чаты"><span>💬</span><span>Чаты</span></button>
-            <div class="bx-clock" data-bx-clock>12:53</div>
-        </div>
-
-        <div class="bx-right"></div>
-    </header>
-
-    <div class="login-page">
-        <div class="login-card">
-            <div class="login-title">
-                <div class="logo login-logo">
-                    <span class="logo-icon">A</span>
-                    <span>Компания</span>
+        <div class="login-groups">
+            {% for group_name, users in groups %}
+            <div class="login-group">
+                <h2>{{ group_name }}</h2>
+                <div class="login-users">
+                    {% for u in users %}
+                    <form method="post" action="/login" class="login-user">
+                        <input type="hidden" name="user_id" value="{{ u.id }}" />
+                        <button class="login-user-btn" type="submit">
+                            <span class="avatar">{{ u.initials }}</span>
+                            <span class="login-user-meta">
+                                <span class="login-user-name">{{ u.full_name }}</span>
+                                <span class="login-user-role">{{ u.role_label }}</span>
+                            </span>
+                        </button>
+                    </form>
+                    {% endfor %}
                 </div>
-                <h1>Выберите пользователя</h1>
-                <p class="login-subtitle">Для входа выберите пользователя.</p>
             </div>
-
-            <div class="login-groups">
-                {% for group_name, users in groups %}
-                <div class="login-group">
-                    <h2>{{ group_name }}</h2>
-                    <div class="login-users">
-                        {% for u in users %}
-                        <form method="post" action="/login" class="login-user">
-                            <input type="hidden" name="user_id" value="{{ u.id }}" />
-                            <button class="login-user-btn" type="submit">
-                                <span class="avatar">{{ u.initials }}</span>
-                                <span class="login-user-meta">
-                                    <span class="login-user-name">{{ u.full_name }}</span>
-                                    <span class="login-user-role">{{ u.role_label }}</span>
-                                </span>
-                            </button>
-                        </form>
-                        {% endfor %}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
+            {% endfor %}
         </div>
-
-        <footer class="footer">
-            <p>by модуль "Цифровизация проектных задач" УЭ</p>
-        </footer>
     </div>
-</body>
-
-</html>
+</div>
+{% endblock %}

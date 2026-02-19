@@ -1,300 +1,207 @@
-<!DOCTYPE html>
-<html lang="ru">
+{% extends "layout.html" %}
 
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Сертификат №{{ cert.id }}</title>
-    <link rel="stylesheet" href="/static/style.css" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-</head>
+{% block title %}Сертификат №{{ cert.id }} — А-Компания{% endblock %}
+{% block crumb %}Сертификаты{% endblock %}
 
-<body>
-    <header class="bx-topbar" aria-label="Панель Bitrix24">
-        <div class="bx-left">
-            <button class="bx-burger" type="button" aria-label="Меню">☰</button>
-            <a class="bx-brand" href="/">Битрикс<span class="bx-brand-24">24</span></a>
+{% block content %}
+<div class="page-head page-head--between">
+    <div>
+        <div class="breadcrumbs">
+            <a href="/certification">Сертификаты</a>
+            <span class="breadcrumbs-sep">/</span>
+            <span>№{{ cert.id }}</span>
         </div>
-
-        <div class="bx-search" role="search">
-            <span class="bx-search-icon">🔍</span>
-            <input class="bx-search-input" type="text" placeholder="искать сотрудника, документ..." />
+        <h1 class="h1-tight">{{ cert.name }}</h1>
+        <div class="muted-line">
+            <span>{{ cert.snapshot_full_name }}</span>
+            {% if cert.snapshot_position %}<span class="dot">•</span><span>{{ cert.snapshot_position }}</span>{% endif %}
+            {% if cert.snapshot_module %}<span class="dot">•</span><span>{{ cert.snapshot_module }}</span>{% endif %}
         </div>
-
-        <div class="bx-center">
-            <button class="bx-chat" type="button" aria-label="Чаты"><span>💬</span><span>Чаты</span></button>
-            <div class="bx-clock" data-bx-clock>12:53</div>
-        </div>
-
-        <div class="bx-right">
-            <div class="bx-work">РАБОТАЮ</div>
-            <button class="bx-btn bx-btn--ghost" type="button">Купить тариф</button>
-            <button class="bx-btn bx-btn--primary" type="button">Пригласить +</button>
-
-            <div class="profile">
-                <button class="bx-user-btn" id="profileBtn" type="button" aria-haspopup="menu" aria-expanded="false">
-                    <span class="bx-user-name">{{ user.full_name }}</span>
-                    <span class="bx-user-avatar">{{ user.initials }}</span>
-                </button>
-                <div class="profile-menu" id="profileMenu" role="menu" aria-label="Меню профиля">
-                    <div class="profile-menu-header">
-                        <div class="avatar avatar--sm">{{ user.initials }}</div>
-                        <div class="profile-menu-meta">
-                            <div class="profile-menu-name">{{ user.full_name }}</div>
-                            <div class="profile-menu-role">{{ user.role_label }}</div>
-                        </div>
-                    </div>
-                    <a class="profile-menu-item" href="/profile">Профиль</a>
-                    <a class="profile-menu-item" href="/logout">Выйти</a>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <div class="app">
-        <aside class="sidebar">
-            <div class="logo">
-                <span class="logo-icon">A</span>
-                <span>Компания</span>
-            </div>
-            <nav class="nav">
-                <a class="nav-item" href="/">Живая лента</a>
-                <a class="nav-item" href="#">Сотрудники</a>
-                <a class="nav-item" href="#">Корпоративная культура</a>
-                <a class="nav-item active" href="/certification">Сертификация</a>
-                <a class="nav-item" href="#">Диск</a>
-                <a class="nav-item" href="#">Задачи и проекты</a>
-                <a class="nav-item" href="#">HR</a>
-                <a class="nav-item" href="#">Face ID</a>
-                <a class="nav-item" href="#">База знаний</a>
-                <a class="nav-item" href="#">Медицинский центр</a>
-                <a class="nav-item" href="#">FAQ</a>
-                <a class="nav-item" href="#">Документы и приказы</a>
-                <a class="nav-item" href="#">Локальные нормативы</a>
-                <a class="nav-item" href="#">Карта офиса</a>
-                <a class="nav-item" href="#">Импорт и экспорт</a>
-                <a class="nav-item" href="#">Web-кафе</a>
-                <a class="nav-item" href="#">Настройки</a>
-            </nav>
-        </aside>
-
-        <main class="content">
-            <div class="feed-header feed-header--between">
-                <div class="header-stack">
-                    <div class="breadcrumbs">
-                        <a href="/certification">Сертификация</a>
-                        <span class="breadcrumbs-sep">/</span>
-                        <span>Сертификат №{{ cert.id }}</span>
-                    </div>
-                    <h1>{{ cert.name }}</h1>
-                    <div class="cert-meta">
-                        <span>{{ cert.snapshot_full_name }}</span>
-                        {% if cert.snapshot_position %}
-                        <span class="dot">•</span><span>{{ cert.snapshot_position }}</span>
-                        {% endif %}
-                        {% if cert.snapshot_module %}
-                        <span class="dot">•</span><span>{{ cert.snapshot_module }}</span>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <div class="btn-row">
-                    <a class="btn" href="/certification">Назад</a>
-                    <a class="btn" href="/api/certificates/{{ cert.id }}/image" target="_blank" rel="noopener">Открыть изображение</a>
-                    <a class="btn btn--primary" href="/api/certificates/{{ cert.id }}/pdf">Скачать PDF</a>
-                    {% if can_exam %}
-                    <button class="btn btn--primary" type="button" id="detailExamBtn">Поставить оценку</button>
-                    {% endif %}
-                    {% if can_hr %}
-                        {% if cert.workflow_status != 'revoked' %}
-                        <button class="btn btn--danger" type="button" id="detailRevokeBtn">Отозвать</button>
-                        {% else %}
-                        <button class="btn btn--outline" type="button" id="detailUnrevokeBtn">Принять</button>
-                        {% endif %}
-                        <button class="btn btn--outline" type="button" id="detailEditBtn">Редактировать</button>
-                        <button class="btn btn--danger" type="button" id="detailDeleteBtn">Удалить</button>
-                    {% endif %}
-
-                </div>
-            </div>
-
-            <div id="certDetailRoot"
-                data-cert-id="{{ cert.id }}"
-                data-share-url="{{ share_url }}"
-                data-can-exam="{% if can_exam %}1{% else %}0{% endif %}"
-                data-can-hr="{% if can_hr %}1{% else %}0{% endif %}"
-                data-cert-type="{{ cert.cert_type }}"
-                data-topic="{{ cert.topic or '' }}"
-                data-name="{{ cert.name }}"
-                data-issued-at="{{ cert.issued_at }}"
-                data-expires-at="{{ cert.expires_at or '' }}"></div>
-
-            <div class="detail-grid">
-                <section class="detail-card">
-                    <div class="detail-card-title">Предпросмотр</div>
-                    <div class="cert-preview">
-                        <img class="cert-preview-img" src="/api/certificates/{{ cert.id }}/image" alt="Сертификат" />
-                    </div>
-                </section>
-
-                <section class="detail-card">
-                    <div class="detail-card-title">Данные сертификата</div>
-
-                    <div class="kv">
-                        <div class="kv-row"><div class="kv-k">Тип</div><div class="kv-v">{% if cert.cert_type == 'internal' %}Внутренний{% else %}Внешний{% endif %}</div></div>
-                        {% if cert.cert_type == 'internal' %}
-                        <div class="kv-row"><div class="kv-k">Профиль</div><div class="kv-v">{{ cert.topic or '—' }}</div></div>
-                        {% endif %}
-                        <div class="kv-row"><div class="kv-k">Дата выдачи</div><div class="kv-v">{{ cert.issued_at }}</div></div>
-                        <div class="kv-row"><div class="kv-k">Действителен до</div><div class="kv-v">{{ cert.expires_at or 'Бессрочно' }}</div></div>
-                        <div class="kv-row"><div class="kv-k">Статус</div><div class="kv-v">{{ cert.status_label }}</div></div>
-                    </div>
-                    <div class="qr-wrap open" style="margin-top:12px;">
-                        <img class="qr-img" src="/api/certificates/{{ cert.id }}/qr" alt="QR" />
-                        <div class="qr-meta">
-                            <div>Ссылка для просмотра сертификата</div>
-                            <a class="qr-link" href="{{ share_url }}" target="_blank" rel="noopener">{{ share_url }}</a>
-                            <button class="btn btn--outline btn--sm" type="button" id="copyShareLinkBtn">Скопировать ссылку</button>
-                        </div>
-                    </div>
-
-
-                    {% if cert.cert_type == 'internal' and cert.workflow_status == 'pending_exam' %}
-                    <div class="detail-callout">
-                        <div class="detail-callout-title">Экзамен</div>
-                        <div>Необходимо сдать экзамен у <b>{{ cert.required_examiner_name or '—' }}</b>.</div>
-                    </div>
-                    {% endif %}
-
-                    {% if cert.cert_type == 'internal' and cert.workflow_status == 'passed' %}
-                    <div class="detail-callout">
-                        <div class="detail-callout-title">Экзамен сдан</div>
-                        <div>Оценка: <b>{{ cert.exam_grade or '—' }}</b>{% if cert.exam_date %} ({{ cert.exam_date }}){% endif %}</div>
-                    </div>
-                    {% endif %}
-
-                    {% if cert.workflow_status == 'revoked' %}
-                    <div class="detail-callout detail-callout--danger">
-                        <div class="detail-callout-title">Сертификат отозван</div>
-                        <div>HR: <b>{{ cert.revoked_by_name or '—' }}</b></div>
-                        <div>Причина: <b>{{ cert.revoked_reason or '—' }}</b></div>
-                    </div>
-                    {% endif %}
-
-                </section>
-            </div>
-
-            <!-- Модалки действий на карточке сертификата -->
-            <div class="modal" id="examModal" aria-hidden="true">
-                <div class="modal-backdrop" data-close="1"></div>
-                <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="examModalTitle">
-                    <div class="modal-header">
-                        <h2 id="examModalTitle">Результат экзамена</h2>
-                        <button class="modal-close" type="button" data-close="1">✕</button>
-                    </div>
-                    <form id="examForm" class="modal-form">
-                        <input type="hidden" name="cert_id" />
-                        <div class="form-row">
-                            <label class="form-field">
-                                <span>Оценка</span>
-                                <select name="exam_grade" required>
-                                    <option value="Hard">Hard</option>
-                                    <option value="Standart">Standart</option>
-                                    <option value="Light">Light</option>
-                                    <option value="Не сдан">Не сдан</option>
-                                </select>
-                            </label>
-                            <label class="form-field">
-                                <span>Дата сдачи</span>
-                                <input name="exam_date" type="date" required />
-                            </label>
-                        </div>
-                        <div class="modal-actions">
-                            <button class="btn btn--primary" type="submit">Сохранить</button>
-                            <button class="btn" type="button" data-close="1">Отмена</button>
-                        </div>
-                        <div class="form-error" id="examFormError" aria-live="polite"></div>
-                    </form>
-                </div>
-            </div>
-
-            <div class="modal" id="revokeModal" aria-hidden="true">
-                <div class="modal-backdrop" data-close="1"></div>
-                <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="revokeModalTitle">
-                    <div class="modal-header">
-                        <h2 id="revokeModalTitle">Отозвать сертификат</h2>
-                        <button class="modal-close" type="button" data-close="1">✕</button>
-                    </div>
-                    <form id="revokeForm" class="modal-form">
-                        <input type="hidden" name="cert_id" />
-                        <label class="form-field">
-                            <span>Причина отзыва</span>
-                            <textarea name="reason" rows="4" placeholder="Например: данные не подтверждены / истёк регламент / ошибка оформления" required></textarea>
-                        </label>
-                        <div class="modal-actions">
-                            <button class="btn btn--danger" type="submit">Отозвать</button>
-                            <button class="btn" type="button" data-close="1">Отмена</button>
-                        </div>
-                        <div class="form-error" id="revokeFormError" aria-live="polite"></div>
-                    </form>
-                </div>
-            </div>
-
-            <div class="modal" id="editModal" aria-hidden="true">
-                <div class="modal-backdrop" data-close="1"></div>
-                <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
-                    <div class="modal-header">
-                        <h2 id="editModalTitle">Редактировать сертификат</h2>
-                        <button class="modal-close" type="button" data-close="1">✕</button>
-                    </div>
-                    <form id="editForm" class="modal-form">
-                        <label class="form-field">
-                            <span>Название</span>
-                            <input name="name" type="text" required />
-                        </label>
-                        <label class="form-field" id="editTopicField">
-                            <span>Профиль сдачи</span>
-                            <select name="topic">
-                                <option value="Корпоративная культура">Корпоративная культура</option>
-                                <option value="Оказание первой помощи">Оказание первой помощи</option>
-                            </select>
-                        </label>
-                        <div class="form-row">
-                            <label class="form-field">
-                                <span>Дата выдачи</span>
-                                <input name="issued_at" type="date" required />
-                            </label>
-                            <label class="form-field" id="editExpiresField">
-                                <span>Действителен до</span>
-                                <input name="expires_at" type="date" />
-                            </label>
-                        </div>
-                        <div class="radio-row" style="margin-top:6px;">
-                            <label class="radio-pill">
-                                <input type="checkbox" name="is_perpetual" id="isPerpetualEdit" checked />
-                                <span>Бессрочный</span>
-                            </label>
-                        </div>
-                        <div class="modal-actions">
-                            <button class="btn btn--primary" type="submit">Сохранить</button>
-                            <button class="btn" type="button" data-close="1">Отмена</button>
-                        </div>
-                        <div class="form-error" id="editFormError" aria-live="polite"></div>
-                    </form>
-                </div>
-            </div>
-
-
-        </main>
     </div>
 
-    <footer class="footer">
-        <p>by модуль "Цифровизация проектных задач" УЭ</p>
-    </footer>
+    <div class="btn-row">
+        <a class="btn" href="/certification">Назад</a>
+        <a class="btn btn--outline" href="/api/certificates/{{ cert.id }}/image" target="_blank" rel="noopener">Открыть изображение</a>
+        <a class="btn btn--primary" href="/api/certificates/{{ cert.id }}/pdf">Скачать PDF</a>
+        {% if can_exam %}
+        <button class="btn btn--primary" type="button" id="detailExamBtn">Поставить оценку</button>
+        {% endif %}
+        {% if can_hr %}
+            {% if cert.workflow_status != 'revoked' %}
+            <button class="btn btn--danger" type="button" id="detailRevokeBtn">Отозвать</button>
+            {% else %}
+            <button class="btn btn--outline" type="button" id="detailUnrevokeBtn">Принять</button>
+            {% endif %}
+            <button class="btn btn--outline" type="button" id="detailEditBtn">Редактировать</button>
+            <button class="btn btn--danger" type="button" id="detailDeleteBtn">Удалить</button>
+        {% endif %}
+    </div>
+</div>
 
-    <script src="/static/app.js"></script>
-</body>
+<div id="certDetailRoot"
+    data-cert-id="{{ cert.id }}"
+    data-share-url="{{ share_url }}"
+    data-can-exam="{% if can_exam %}1{% else %}0{% endif %}"
+    data-can-hr="{% if can_hr %}1{% else %}0{% endif %}"
+    data-cert-type="{{ cert.cert_type }}"
+    data-topic="{{ cert.topic or '' }}"
+    data-name="{{ cert.name }}"
+    data-issued-at="{{ cert.issued_at }}"
+    data-expires-at="{{ cert.expires_at or '' }}"></div>
 
-</html>
+<div class="detail-grid">
+    <section class="detail-card">
+        <div class="detail-card-title">Предпросмотр</div>
+        <div class="cert-preview">
+            <img class="cert-preview-img" src="/api/certificates/{{ cert.id }}/image" alt="Сертификат" />
+        </div>
+    </section>
+
+    <section class="detail-card">
+        <div class="detail-card-title">Данные сертификата</div>
+
+        <div class="kv">
+            <div class="kv-row"><div class="kv-k">Тип</div><div class="kv-v">{% if cert.cert_type == 'internal' %}Внутренний{% else %}Внешний{% endif %}</div></div>
+            {% if cert.cert_type == 'internal' %}
+            <div class="kv-row"><div class="kv-k">Профиль</div><div class="kv-v">{{ cert.topic or '—' }}</div></div>
+            {% endif %}
+            <div class="kv-row"><div class="kv-k">Дата выдачи</div><div class="kv-v">{{ cert.issued_at }}</div></div>
+            <div class="kv-row"><div class="kv-k">Действителен до</div><div class="kv-v">{{ cert.expires_at or 'Бессрочно' }}</div></div>
+            <div class="kv-row"><div class="kv-k">Статус</div><div class="kv-v">{{ cert.status_label }}</div></div>
+        </div>
+
+        <div class="qr-wrap open" style="margin-top:12px;">
+            <img class="qr-img" src="/api/certificates/{{ cert.id }}/qr" alt="QR" />
+            <div class="qr-meta">
+                <div class="qr-title">Ссылка для просмотра сертификата</div>
+                <a class="qr-link" href="{{ share_url }}" target="_blank" rel="noopener">{{ share_url }}</a>
+                <button class="btn btn--outline btn--sm" type="button" id="copyShareLinkBtn">Скопировать ссылку</button>
+            </div>
+        </div>
+
+        {% if cert.cert_type == 'internal' and cert.workflow_status == 'pending_exam' %}
+        <div class="detail-callout">
+            <div class="detail-callout-title">Экзамен</div>
+            <div>Необходимо сдать экзамен у <b>{{ cert.required_examiner_name or '—' }}</b>.</div>
+        </div>
+        {% endif %}
+
+        {% if cert.cert_type == 'internal' and cert.workflow_status == 'passed' %}
+        <div class="detail-callout">
+            <div class="detail-callout-title">Экзамен сдан</div>
+            <div>Оценка: <b>{{ cert.exam_grade or '—' }}</b>{% if cert.exam_date %} ({{ cert.exam_date }}){% endif %}</div>
+        </div>
+        {% endif %}
+
+        {% if cert.workflow_status == 'revoked' %}
+        <div class="detail-callout detail-callout--danger">
+            <div class="detail-callout-title">Сертификат отозван</div>
+            <div>HR: <b>{{ cert.revoked_by_name or '—' }}</b></div>
+            <div>Причина: <b>{{ cert.revoked_reason or '—' }}</b></div>
+        </div>
+        {% endif %}
+
+    </section>
+</div>
+
+<!-- Модалки действий на карточке сертификата -->
+<div class="modal" id="examModal" aria-hidden="true">
+    <div class="modal-backdrop" data-close="1"></div>
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="examModalTitle">
+        <div class="modal-header">
+            <h2 id="examModalTitle">Результат экзамена</h2>
+            <button class="modal-close" type="button" data-close="1">✕</button>
+        </div>
+        <form id="examForm" class="modal-form">
+            <input type="hidden" name="cert_id" />
+            <div class="form-row">
+                <label class="form-field">
+                    <span>Оценка</span>
+                    <select name="exam_grade" required>
+                        <option value="Hard">Hard</option>
+                        <option value="Standart">Standart</option>
+                        <option value="Light">Light</option>
+                        <option value="Не сдан">Не сдан</option>
+                    </select>
+                </label>
+                <label class="form-field">
+                    <span>Дата сдачи</span>
+                    <input name="exam_date" type="date" required />
+                </label>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn--primary" type="submit">Сохранить</button>
+                <button class="btn" type="button" data-close="1">Отмена</button>
+            </div>
+            <div class="form-error" id="examFormError" aria-live="polite"></div>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="revokeModal" aria-hidden="true">
+    <div class="modal-backdrop" data-close="1"></div>
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="revokeModalTitle">
+        <div class="modal-header">
+            <h2 id="revokeModalTitle">Отозвать сертификат</h2>
+            <button class="modal-close" type="button" data-close="1">✕</button>
+        </div>
+        <form id="revokeForm" class="modal-form">
+            <input type="hidden" name="cert_id" />
+            <label class="form-field">
+                <span>Причина отзыва</span>
+                <textarea name="reason" rows="4" placeholder="Например: данные не подтверждены / истёк регламент / ошибка оформления" required></textarea>
+            </label>
+            <div class="modal-actions">
+                <button class="btn btn--danger" type="submit">Отозвать</button>
+                <button class="btn" type="button" data-close="1">Отмена</button>
+            </div>
+            <div class="form-error" id="revokeFormError" aria-live="polite"></div>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="editModal" aria-hidden="true">
+    <div class="modal-backdrop" data-close="1"></div>
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+        <div class="modal-header">
+            <h2 id="editModalTitle">Редактировать сертификат</h2>
+            <button class="modal-close" type="button" data-close="1">✕</button>
+        </div>
+        <form id="editForm" class="modal-form">
+            <label class="form-field">
+                <span>Название</span>
+                <input name="name" type="text" required />
+            </label>
+            <label class="form-field" id="editTopicField">
+                <span>Профиль сдачи</span>
+                <select name="topic">
+                    <option value="Корпоративная культура">Корпоративная культура</option>
+                    <option value="Оказание первой помощи">Оказание первой помощи</option>
+                </select>
+            </label>
+            <div class="form-row">
+                <label class="form-field">
+                    <span>Дата выдачи</span>
+                    <input name="issued_at" type="date" required />
+                </label>
+                <label class="form-field" id="editExpiresField">
+                    <span>Действителен до</span>
+                    <input name="expires_at" type="date" />
+                </label>
+            </div>
+            <div class="radio-row" style="margin-top:6px;">
+                <label class="radio-pill">
+                    <input type="checkbox" name="is_perpetual" id="isPerpetualEdit" checked />
+                    <span>Бессрочный</span>
+                </label>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn--primary" type="submit">Сохранить</button>
+                <button class="btn" type="button" data-close="1">Отмена</button>
+            </div>
+            <div class="form-error" id="editFormError" aria-live="polite"></div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

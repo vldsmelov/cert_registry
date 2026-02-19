@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}А-Компания{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+
+<body>
+    <div class="portal">
+        <aside class="sider" aria-label="Навигация">
+            <a class="brand" href="/" aria-label="А-Компания">
+                <span class="brand-mark">A</span>
+                <span class="brand-name">А-Компания</span>
+            </a>
+
+            {% set p = request.url.path %}
+            <nav class="menu">
+                <a class="menu-item {% if p == '/' %}active{% endif %}" href="/">
+                    <span class="mi-ico">⌂</span><span>Главная</span>
+                </a>
+                <a class="menu-item muted" href="#" aria-disabled="true">
+                    <span class="mi-ico">✓</span><span>Задачи ДО</span>
+                </a>
+                <a class="menu-item muted" href="#" aria-disabled="true">
+                    <span class="mi-ico">📊</span><span>KPI</span>
+                </a>
+                <a class="menu-item muted" href="#" aria-disabled="true">
+                    <span class="mi-ico">👥</span><span>Сотрудники</span>
+                </a>
+
+                <!-- ВАЖНО: Сертификаты между Сотрудники и Бухгалтерия -->
+                <a class="menu-item {% if p.startswith('/certification') or p.startswith('/certificate') %}active{% endif %}" href="/certification">
+                    <span class="mi-ico">🎓</span><span>Сертификаты</span>
+                </a>
+
+                <a class="menu-item muted" href="#" aria-disabled="true">
+                    <span class="mi-ico">🧾</span><span>Бухгалтерия</span>
+                </a>
+
+                <div class="menu-section">Ссылки</div>
+                <a class="menu-item menu-link" href="https://team.example" target="_blank" rel="noopener">
+                    <span class="mi-ico">↗</span><span>Bitrix</span>
+                </a>
+                <a class="menu-item menu-link" href="#" aria-disabled="true">
+                    <span class="mi-ico">↗</span><span>Заявки</span>
+                </a>
+            </nav>
+        </aside>
+
+        <div class="main">
+            <header class="top" aria-label="Верхняя панель">
+                <div class="top-left">
+                    <div class="crumb">
+                        <span class="crumb-ico">⟡</span>
+                        <span class="crumb-title">{% block crumb %}Главная{% endblock %}</span>
+                    </div>
+                </div>
+                <div class="top-right">
+                    <a class="top-link" href="#" aria-disabled="true">Поддержка</a>
+
+                    <div class="profile">
+                        <button class="user-btn" id="profileBtn" type="button" aria-haspopup="menu" aria-expanded="false">
+                            <span class="user-name">{{ user.full_name }}</span>
+                            <span class="user-avatar">{{ user.initials }}</span>
+                        </button>
+                        <div class="profile-menu" id="profileMenu" role="menu" aria-label="Меню профиля">
+                            <div class="profile-menu-header">
+                                <div class="avatar avatar--sm">{{ user.initials }}</div>
+                                <div class="profile-menu-meta">
+                                    <div class="profile-menu-name">{{ user.full_name }}</div>
+                                    <div class="profile-menu-role">{{ user.role_label }}</div>
+                                </div>
+                            </div>
+                            <a class="profile-menu-item" href="/profile">Профиль</a>
+                            <a class="profile-menu-item" href="/logout">Выйти</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="page">
+                {% block content %}{% endblock %}
+            </main>
+
+            <footer class="footer">
+                <p>by модуль "Цифровизация проектных задач" УЭ</p>
+            </footer>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+
+</html>

@@ -43,6 +43,78 @@
     window.setInterval(tick, 15000);
   }
 
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i];
+      a[i] = a[j];
+      a[j] = tmp;
+    }
+    return a;
+  }
+
+  function initDashboardNews() {
+    var root = document.getElementById('newsList');
+    if (!root) return;
+
+    var count = parseInt(root.getAttribute('data-news-count') || '3', 10);
+    if (!count || count < 1) count = 3;
+
+    var items = [
+      {
+        title: 'Новый стандарт обучения: микро‑сертификации',
+        text: 'В прототипе реестра появились статусы экзамена и быстрый экспорт по сотрудникам.'
+      },
+      {
+        title: 'Проверка сертификата по QR стала удобнее',
+        text: 'Открывайте публичную страницу и получайте подтверждение валидности за секунды.'
+      },
+      {
+        title: 'HR‑контур: отзыв и восстановление сертификата',
+        text: 'Для роли HR доступны действия по отзыву с указанием причины и возврату статуса.'
+      },
+      {
+        title: 'Грейды Light / Standart / Hard',
+        text: 'Оценки экзамена унифицированы и отображаются в карточках и таблице команды.'
+      },
+      {
+        title: 'Единый дизайн портала для всех страниц',
+        text: 'Стили приведены к корпоративному виду: светлая тема, боковое меню и верхняя панель.'
+      },
+      {
+        title: 'Командный обзор: фильтры по модулям и срокам',
+        text: 'Быстро находите истекающие сертификаты и контролируйте покрытие обучения.'
+      },
+      {
+        title: 'Публичная проверка — только необходимый минимум',
+        text: 'Без входа доступно ФИО, сроки и итоговый статус: действителен / недействителен.'
+      },
+      {
+        title: 'Демонстрационный режим: случайные новости',
+        text: 'При обновлении страницы новостной блок всегда показывает ровно 3 случайных записи.'
+      }
+    ];
+
+    root.innerHTML = '';
+    shuffle(items).slice(0, count).forEach(function (n) {
+      var a = el('a', 'news-item');
+      a.href = '#';
+      a.addEventListener('click', function (e) { e.preventDefault(); });
+
+      var thumb = el('div', 'news-thumb');
+      var content = el('div', '');
+      var t = el('div', 'news-title', n.title);
+      var tx = el('div', 'news-text', n.text);
+      content.appendChild(t);
+      content.appendChild(tx);
+
+      a.appendChild(thumb);
+      a.appendChild(content);
+      root.appendChild(a);
+    });
+  }
+
   function el(tag, cls, text) {
     var node = document.createElement(tag);
     if (cls) node.className = cls;
@@ -1847,7 +1919,9 @@
   }
 
   initProfileMenu();
+  // В новом дизайне Bitrix‑шапка не используется, но функция безопасна.
   initBitrixHeader();
+  initDashboardNews();
   initCertification();
   initCertificateDetail();
 })();

@@ -620,6 +620,19 @@ async def certificate_page(request: Request, cert_id: int):
     # Публичный просмотр (без авторизации): показываем только статус
     if user is None:
         st = public_status(cert)
+
+        # Для публичной страницы показываем минимум: ФИО + сроки + валидность.
+        owner_id = int(cert.get("owner_id") or 0)
+        full_name = str(cert.get("snapshot_full_name") or "").strip()
+        if not full_name and owner_id:
+            base = USERS_BY_ID.get(owner_id)
+            if base is not None:
+                full_name = make_display_user(base, get_user_profile(base.id)).full_name
+
+        issued_at = str(cert.get("issued_at") or "—")
+        expires_at_raw = str(cert.get("expires_at") or "").strip()
+        expires_at = expires_at_raw if expires_at_raw else "Бессрочно"
+
         return templates.TemplateResponse(
             "certificate_public.html",
             {
@@ -627,6 +640,9 @@ async def certificate_page(request: Request, cert_id: int):
                 "cert_id": int(cert_id),
                 "status_code": st["code"],
                 "status_label": st["label"],
+                "full_name": full_name or "—",
+                "issued_at": issued_at,
+                "expires_at": expires_at,
             },
         )
 

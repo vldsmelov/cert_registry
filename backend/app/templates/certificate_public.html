@@ -1,51 +1,37 @@
-<!DOCTYPE html>
-<html lang="ru">
+{% extends "layout_public.html" %}
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Проверка сертификата №{{ cert_id }}</title>
-  <link rel="stylesheet" href="/static/style.css" />
-</head>
+{% block title %}Проверка сертификата №{{ cert_id }} — А-Компания{% endblock %}
 
-<body>
-  <header class="bx-topbar bx-topbar--standalone" aria-label="Панель Bitrix24">
-    <div class="bx-left">
-      <button class="bx-burger" type="button" aria-label="Меню">☰</button>
-      <a class="bx-brand" href="/">Битрикс<span class="bx-brand-24">24</span></a>
-    </div>
+{% block public_actions %}
+<a class="btn btn--primary" href="/login">Войти</a>
+{% endblock %}
 
-    <div class="bx-search" role="search">
-      <span class="bx-search-icon">🔍</span>
-      <input class="bx-search-input" type="text" placeholder="искать сотрудника, документ..." />
-    </div>
-
-    <div class="bx-center">
-      <button class="bx-chat" type="button" aria-label="Чаты"><span>💬</span><span>Чаты</span></button>
-      <div class="bx-clock" data-bx-clock>12:53</div>
-    </div>
-
-    <div class="bx-right">
-      <a class="bx-btn bx-btn--primary" href="/login">Войти</a>
-    </div>
-  </header>
-
-  <div class="public-wrap">
+{% block content %}
+<div class="public-wrap">
     <div class="public-card">
-      <div class="public-title">Проверка сертификата</div>
-      <div class="public-sub">№ {{ cert_id }}</div>
+        <div class="public-title">Проверка сертификата</div>
+        <div class="public-sub">№ {{ cert_id }}</div>
 
-      <div class="public-status public-status--{{ status_code }}">{{ status_label }}</div>
+        <div class="public-kv">
+            <div class="public-kv-row">
+                <div class="public-k">ФИО</div>
+                <div class="public-v">{{ full_name }}</div>
+            </div>
+            <div class="public-kv-row">
+                <div class="public-k">Дата выдачи</div>
+                <div class="public-v">{{ issued_at }}</div>
+            </div>
+            <div class="public-kv-row">
+                <div class="public-k">Действителен до</div>
+                <div class="public-v">{{ expires_at }}</div>
+            </div>
+        </div>
 
-      <div class="public-actions">
-        <a class="btn btn--primary" href="/login">Войти в систему</a>
-      </div>
+        <div class="public-status public-status--{{ status_code }}">{{ status_label }}</div>
+
+        <div class="public-actions">
+            <a class="btn btn--primary" href="/login">Войти в систему</a>
+        </div>
     </div>
-  </div>
-
-  <footer class="footer">
-    <p>by модуль "Цифровизация проектных задач" УЭ</p>
-  </footer>
-</body>
-
-</html>
+</div>
+{% endblock %}
